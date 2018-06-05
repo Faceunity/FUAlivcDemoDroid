@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+          android:id="@+id/tv_comment"
+          android:layout_width="match_parent"
+          android:layout_height="match_parent"
+          android:background="#4d000000"
+          android:gravity="center_vertical"
+          android:orientation="vertical"
+          android:padding="5dp"
+          android:textColor="@android:color/white"
+          android:textSize="24sp"
+/>

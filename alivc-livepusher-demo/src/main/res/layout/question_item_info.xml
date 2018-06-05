@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="50dp"
+              android:gravity="center_vertical"
+              android:paddingLeft="10dp"
+              android:paddingRight="10dp">
+    <TextView
+        android:id="@+id/question_id"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:gravity="center_vertical"
+        android:textColor="@android:color/white"/>
+
+    <LinearLayout
+        android:id="@+id/opera"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:gravity="center_vertical"
+        android:layout_alignParentRight="true">
+        <TextView
+            android:id="@+id/send_question"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="10dp"
+            android:background="@drawable/button_selector"
+            android:gravity="center_vertical"
+            android:lines="2"
+            android:ellipsize="end"
+            android:textColor="@android:color/white"
+            android:text="@string/send_question"/>
+        <TextView
+            android:id="@+id/send_answer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/button_selector"
+            android:gravity="center_vertical"
+            android:lines="2"
+            android:ellipsize="end"
+            android:textColor="@android:color/white"
+            android:text="@string/send_answer"/>
+    </LinearLayout>
+    <TextView
+        android:id="@+id/question_info"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_toRightOf="@+id/question_id"
+        android:layout_toLeftOf="@+id/opera"
+        android:layout_marginRight="10dp"
+        android:layout_marginLeft="10dp"
+        android:maxLines="2"
+        android:ellipsize="end"
+        android:gravity="center_vertical"
+        android:textColor="@android:color/white" />
+</RelativeLayout>

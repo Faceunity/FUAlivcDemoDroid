@@ -1,0 +1,351 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <RelativeLayout
+        android:id="@+id/main"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:focusable="true"
+        android:focusableInTouchMode="true">
+
+        <TextView
+            android:id="@+id/rtmpTxt"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="5dp"
+            android:text="@string/rtmp_url"
+            android:textSize="16sp" />
+
+        <EditText
+            android:id="@+id/rtmpUrl"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/rtmpTxt"
+            android:text="rtmp://push-videocall.aliyuncs.com/test/stream4" />
+        <!--android:text="rtmp://push.lss.qupai.me/qupai-live/qupai-live-wyj99?auth_key=4466400545-0-0-1d54a5911b70caccfce6983bced975e8"/>-->
+        <!--android:text="rtmp://push.lss.qupai.me/qupai-live/qupai-live-ljh99?auth_key=1766324181-0-0-c05833d96abaec5dea49075d24ef7f9a"/>-->
+        <!--android:text="rtmp://video-center.alivecdn.com/bodyfat/123?vhost=live.daboowifi.net"/>-->
+        <!--android:text="rtmp://3052.livepush.myqcloud.com/live/3052_197938de7d6111e69776e435c87f075e?bizid=3052"/>-->
+        <!--android:text="rtmp://video-center.alivecdn.com/zbtest1/ZHpoMTYxMTk4ODA4?vhost=zbtest.yundzh.com"/>-->
+        <!--android:text="rtmp://175.6.3.187/mglive/192c7b00c0bd96c7b38ed082b512c890?auth_key=1468488142-0-0-065742395fe069c01182da800e8d7316&amp;vhost=liveshow.push.max.mgtv.com&amp;edge_push=on"/>-->
+        <!--android:text="rtmp://push.lss.qupai.me/qupai-live/qupai-live-yds99?auth_key=4466388393-0-0-255af6629fbe7f9146af807979d45c08"/>-->
+        <!--android:text="rtmp://push.lss.qupai.me/qupai-live/qupai-live-shy99?auth_key=4466401058-0-0-753d6ca85f7dfe4fc719f18280ff9683" />-->
+        <!--android:text="rtmp://push.lss.qupai.me/qupai-live/qupai-live-yds99?auth_key=4466388393-0-0-255af6629fbe7f9146af807979d45c08" />-->
+
+        <Button
+            android:id="@+id/connectBT"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/rtmpUrl"
+            android:layout_marginTop="10dp"
+            android:text="@string/ready_push" />
+
+        <RadioGroup
+            android:id="@+id/resolution_group"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/connectBT"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <RadioButton
+                android:id="@+id/radiobutton0"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:checked="false"
+                android:text="240P"
+                android:textSize="10sp" />
+
+            <RadioButton
+                android:id="@+id/radiobutton1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:checked="true"
+                android:text="360P"
+                android:textSize="10sp" />
+
+            <RadioButton
+                android:id="@+id/radiobutton2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:checked="false"
+                android:text="480P"
+                android:textSize="10sp" />
+
+            <RadioButton
+                android:id="@+id/radiobutton3"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:checked="false"
+                android:text="540P"
+                android:textSize="10sp" />
+
+            <RadioButton
+                android:id="@+id/radiobutton4"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:checked="false"
+                android:text="720P"
+                android:textSize="10sp" />
+
+        </RadioGroup>
+
+        <RadioGroup
+            android:id="@+id/rotation_group"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/resolution_group"
+            android:orientation="horizontal">
+
+            <RadioButton
+                android:id="@+id/screenOrientation1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="false"
+                android:text="@string/landscape" />
+
+            <RadioButton
+                android:id="@+id/screenOrientation2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="@string/portrait_normal" />
+        </RadioGroup>
+
+        <LinearLayout
+            android:id="@+id/audio_group"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:layout_below="@id/rotation_group">
+
+            <CheckBox
+                android:id="@+id/front_camera_mirror"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/resolution_group"
+                android:checked="true"
+                android:text="@string/front_camera_mirror" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/layout_frame_rate"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:layout_below="@id/audio_group"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:text="@string/fps" />
+
+            <EditText
+                android:id="@+id/et_frame_rate"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="5dp"
+                android:hint="@string/fps_hint"
+                android:inputType="number"
+                android:text="20" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/layout_bitrate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/layout_frame_rate"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="horizontal">
+                <TextView
+                    android:layout_width="0dip"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/min_bitrate"/>
+                <EditText
+                    android:id="@+id/et_min_bitrate"
+                    android:layout_width="0dip"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="min bitrate"
+                    android:inputType="number"
+                    android:singleLine="true"
+                    android:text="500" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="horizontal">
+                <TextView
+                    android:layout_width="0dip"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/max_bitrate"/>
+                <EditText
+                    android:id="@+id/et_max_bitrate"
+                    android:layout_width="0dip"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="max bitrate"
+                    android:inputType="number"
+                    android:singleLine="true"
+                    android:text="800" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/layout_bitrate1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/layout_bitrate"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="horizontal">
+                <TextView
+                    android:layout_width="0dip"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/best_bitrate"/>
+                <EditText
+                    android:id="@+id/et_best_bitrate"
+                    android:layout_width="0dip"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="best bitrate"
+                    android:inputType="number"
+                    android:singleLine="true"
+                    android:text="600" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="horizontal">
+                <TextView
+                    android:layout_width="0dip"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/initial_bitrate"/>
+                <EditText
+                    android:id="@+id/et_init_bitrate"
+                    android:layout_width="0dip"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="initial bitrate"
+                    android:inputType="number"
+                    android:singleLine="true"
+                    android:text="600" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/watermark"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/layout_bitrate1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/watermard_url" />
+
+            <EditText
+                android:id="@+id/watermark_path"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="assets://Alivc/wartermark/logo.png" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="marginX : " />
+
+                    <EditText
+                        android:id="@+id/dx"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="number"
+                        android:text="14" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="marginY : " />
+
+                    <EditText
+                        android:id="@+id/dy"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="number"
+                        android:text="14" />
+                </LinearLayout>
+
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/watermark_text"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="0.1"
+                        android:maxLines="2"
+                        android:ellipsize="end"
+                        android:text="@string/watermark_position" />
+
+                    <EditText
+                        android:id="@+id/site"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="0.3"
+                        android:inputType="number"
+                        android:gravity="center"
+                        android:text="1" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </RelativeLayout>
+</ScrollView>

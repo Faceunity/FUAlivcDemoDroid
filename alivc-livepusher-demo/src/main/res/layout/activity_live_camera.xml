@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+             android:layout_width="match_parent"
+             android:layout_height="match_parent"
+             android:keepScreenOn="true"
+             android:orientation="vertical">
+
+    <SurfaceView
+        android:id="@+id/camera_surface"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+
+    <LinearLayout
+        android:id="@+id/layout_setting"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center">
+
+        <Button
+            android:id="@+id/btn_advance"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/advance_setting"
+            android:layout_margin="10dp" />
+        <ToggleButton android:layout_width="wrap_content"
+                      android:layout_height="wrap_content"
+                      android:textOff="@string/mute_off"
+                      android:textOn="@string/mute_on"
+                      android:layout_margin="10dp"
+                      android:id="@+id/btn_mute" />
+        <ToggleButton android:layout_width="wrap_content"
+                      android:layout_height="wrap_content"
+                      android:textOff="@string/mirror_off"
+                      android:textOn="@string/mirror_on"
+                      android:layout_margin="10dp"
+                      android:id="@+id/btn_mirrored" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:background="@android:color/transparent"
+        android:layout_below="@+id/layout_setting"
+        android:visibility="visible">
+        <include layout="@layout/performance_log"/>
+    </FrameLayout>
+
+    <LinearLayout
+        android:id="@+id/layout_preferences"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:orientation="vertical">
+
+        <ToggleButton
+            android:id="@+id/toggle_live_push"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textOff="@string/live_push"
+            android:textOn="@string/live_stop"
+            />
+
+        <ToggleButton
+            android:id="@+id/toggle_camera"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textOff="@string/app_camera"
+            android:textOn="@string/app_camera"/>
+
+        <ToggleButton
+            android:id="@+id/toggle_flash_light"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textOff="@string/toggle_switch_flash_on"
+            android:textOn="@string/toggle_switch_flash_off"/>
+
+        <ToggleButton
+            android:id="@+id/btn_switch_beauty"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textOff="@string/toggle_switch_beauty_on"
+            android:textOn="@string/toggle_switch_beauty_off"/>
+    </LinearLayout>
+
+
+</RelativeLayout>
