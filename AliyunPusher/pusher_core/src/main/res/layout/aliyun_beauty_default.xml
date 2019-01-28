@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="185dp"
+    android:background="#4D1C1F21"
+    android:clickable="true"
+    android:orientation="vertical">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="44.5dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:drawableLeft="@drawable/icon_beauty"
+            android:drawablePadding="10dp"
+            android:gravity="center_vertical"
+            android:text="@string/alivc_beauty"
+            android:textColor="#ffffff"
+            android:textSize="12dp" />
+
+        <ImageView
+            android:id="@+id/iv_beauty_detail"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_gravity="center_vertical|right"
+            android:layout_marginRight="5dp"
+            android:padding="10dp"
+            android:src="@drawable/icon_beauty_detail" />
+    </FrameLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp"
+        android:background="#c3c5c6" />
+
+
+    <RadioGroup
+        android:id="@+id/beauty_default_group"
+        android:layout_width="345dp"
+        android:layout_height="45dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="41dp"
+        android:orientation="horizontal">
+
+        <RadioButton
+            android:id="@+id/beauty_0"
+            android:layout_width="45dp"
+            android:layout_height="45dp"
+            android:background="@drawable/alivc_beauty_default_bt_selector"
+            android:button="@null"
+            android:gravity="center"
+            android:text="0"
+            android:textColor="#ffffff"
+            android:textSize="14dp" />
+
+        <RadioButton
+            android:id="@+id/beauty_1"
+            android:layout_width="45dp"
+            android:layout_height="45dp"
+            android:layout_marginLeft="15dp"
+            android:background="@drawable/alivc_beauty_default_bt_selector"
+            android:button="@null"
+            android:gravity="center"
+            android:text="1"
+            android:textColor="#ffffff"
+            android:textSize="14dp" />
+
+        <RadioButton
+            android:id="@+id/beauty_2"
+            android:layout_width="45dp"
+            android:layout_height="45dp"
+            android:layout_marginLeft="15dp"
+            android:background="@drawable/alivc_beauty_default_bt_selector"
+            android:button="@null"
+            android:gravity="center"
+            android:text="2"
+            android:textColor="#ffffff"
+            android:textSize="14dp" />
+
+        <RadioButton
+            android:id="@+id/beauty_3"
+            android:layout_width="45dp"
+            android:layout_height="45dp"
+            android:layout_marginLeft="15dp"
+            android:background="@drawable/alivc_beauty_default_bt_selector"
+            android:button="@null"
+            android:gravity="center"
+            android:text="3"
+            android:textColor="#ffffff"
+            android:textSize="14dp" />
+
+        <RadioButton
+            android:id="@+id/beauty_4"
+            android:layout_width="45dp"
+            android:layout_height="45dp"
+            android:layout_marginLeft="15dp"
+            android:background="@drawable/alivc_beauty_default_bt_selector"
+            android:button="@null"
+            android:gravity="center"
+            android:text="4"
+            android:textColor="#ffffff"
+            android:textSize="14dp" />
+
+        <RadioButton
+            android:id="@+id/beauty_5"
+            android:layout_width="45dp"
+            android:layout_height="45dp"
+            android:layout_marginLeft="15dp"
+            android:background="@drawable/alivc_beauty_default_bt_selector"
+            android:button="@null"
+            android:gravity="center"
+            android:text="5"
+            android:textColor="#ffffff"
+            android:textSize="14dp" />
+    </RadioGroup>
+
+</LinearLayout>

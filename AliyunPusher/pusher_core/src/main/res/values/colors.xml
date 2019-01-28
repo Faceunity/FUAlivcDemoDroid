@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#1e222d</color>
+    <color name="colorPrimaryDark">#303F9F</color>
+    <color name="transparent">#50000000</color>
+
+    <color name="text_green">#00c0fb</color>
+    <color name="text_black">#333333</color>
+    <color name="text_white">#ffffffff</color>
+
+    <color name="alivc_color_pusher_colorPrimary">#1e222d</color>
+    <color name="alivc_color_pusher_colorAccent">#ff00c1de</color>
+
+    <color name="colorPrimary_alpha_five">#1affffff</color>
+    <color name="colorPrimary_noalpha_five">#292d37</color>
+    <color name="colorPrimary_alpha_ten">#0cffffff</color>
+    <color name="colorPrimary_noalpha_ten">#343842</color>
+    <color name="colorPrimary_alpha_fifteen">#26ffffff</color>
+    <color name="colorPrimary_noalpha_fifteen">#40434c</color>
+    <color name="colorPrimary_alpha_twenty">#33ffffff</color>
+
+    <color name="dialog_bg">#f2373d41</color>
+    <color name="dialog_bg_light">#4D1C1F21</color>
+    <color name="dialog_bg_gray">#888</color>
+    <color name="colorAccent">#ff00c1de</color>
+</resources>

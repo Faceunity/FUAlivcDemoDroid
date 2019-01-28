@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="font_size_68px">34.0sp</dimen>
+    <dimen name="font_size_54px">27.0sp</dimen>
+    <dimen name="font_size_48px">24.0sp</dimen>
+    <dimen name="font_size_44px">22.0sp</dimen>
+    <dimen name="font_size_42px">21.0sp</dimen>
+    <dimen name="font_size_40px">20.0sp</dimen>
+    <dimen name="font_size_38px">19.0sp</dimen>
+    <dimen name="font_size_36px">18.0sp</dimen>
+    <dimen name="font_size_34px">17.0sp</dimen>
+    <dimen name="font_size_32px">16.0sp</dimen>
+    <dimen name="font_size_30px">15.0sp</dimen>
+    <dimen name="font_size_28px">14.0sp</dimen>
+    <dimen name="font_size_26px">13.0sp</dimen>
+    <dimen name="font_size_24px">12.0sp</dimen>
+    <dimen name="font_size_22px">11.0sp</dimen>
+    <dimen name="font_size_20px">10.0sp</dimen>
+</resources>

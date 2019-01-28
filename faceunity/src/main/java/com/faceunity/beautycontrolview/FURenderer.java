@@ -29,7 +29,6 @@ import static com.faceunity.wrapper.faceunity.FU_ADM_FLAG_FLIP_X;
  * 3.对应的时机调用onSurfaceCreated和onSurfaceDestroyed
  * 4.处理图像时调用onDrawFrame
  * <p>
- * 如果您有更高级的定制需求，Nama API文档请参考http://www.faceunity.com/technical/android-api.html
  */
 public class FURenderer implements OnFaceUnityControlListener {
     private static final String TAG = FURenderer.class.getSimpleName();
@@ -116,7 +115,7 @@ public class FURenderer implements OnFaceUnityControlListener {
             /**
              * fuSetup faceunity初始化
              * 其中 v3.bundle：人脸识别数据文件，缺少该文件会导致系统初始化失败；
-             *      authpack：用于鉴权证书内存数组。若没有,请咨询support@faceunity.com
+             *      authpack：用于鉴权证书内存数组
              * 首先调用完成后再调用其他FU API
              */
             InputStream v3 = context.getAssets().open(BUNDLE_v3);
@@ -808,8 +807,9 @@ public class FURenderer implements OnFaceUnityControlListener {
                             if (mItemsArray[ITEM_ARRAYS_EFFECT] > 0) {
                                 faceunity.fuDestroyItem(mItemsArray[ITEM_ARRAYS_EFFECT]);
                             }
+                            updateEffectItemParams(effect, newEffectItem);
                             mItemsArray[ITEM_ARRAYS_EFFECT] = newEffectItem;
-                            setMaxFaces(effect.maxFace());
+                            //setMaxFaces(effect.maxFace());
                         }
                     });
                     break;
@@ -841,6 +841,46 @@ public class FURenderer implements OnFaceUnityControlListener {
                     break;
             }
         }
+    }
+
+    /**
+     * 设置对道具设置相应的参数
+     *
+     * @param itemHandle
+     */
+    private void updateEffectItemParams(Effect effect, final int itemHandle) {
+        if (effect == null || itemHandle == 0)
+            return;
+        faceunity.fuItemSetParam(itemHandle, "isAndroid", 1.0);
+
+        int effectType = effect.effectType();
+        if (effectType == Effect.EFFECT_TYPE_NORMAL) {
+            //rotationAngle 参数是用于旋转普通道具
+            faceunity.fuItemSetParam(itemHandle, "rotationAngle", 360 - mInputImageOrientation);
+        }
+        if (effectType == Effect.EFFECT_TYPE_ANIMOJI || effectType == Effect.EFFECT_TYPE_PORTRAIT_DRIVE) {
+            //is3DFlipH 参数是用于对3D道具的镜像
+            faceunity.fuItemSetParam(itemHandle, "is3DFlipH", mCurrentCameraType == Camera.CameraInfo.CAMERA_FACING_BACK ? 1 : 0);
+            //isFlipExpr 参数是用于对人像驱动道具的镜像
+            faceunity.fuItemSetParam(itemHandle, "isFlipExpr", mCurrentCameraType == Camera.CameraInfo.CAMERA_FACING_BACK ? 1 : 0);
+            //这两句代码用于识别人脸默认方向的修改，主要针对animoji道具的切换摄像头倒置问题
+            faceunity.fuItemSetParam(itemHandle, "camera_change", 1.0);
+            faceunity.fuSetDefaultRotationMode((360 - mInputImageOrientation) / 90);
+        }
+//        if (effectType == Effect.EFFECT_TYPE_GESTURE) {
+//            //loc_y_flip与loc_x_flip 参数是用于对手势识别道具的镜像
+//            faceunity.fuItemSetParam(itemHandle, "is3DFlipH", mCurrentCameraType == Camera.CameraInfo.CAMERA_FACING_BACK ? 1 : 0);
+//            faceunity.fuItemSetParam(itemHandle, "loc_y_flip", mCurrentCameraType == Camera.CameraInfo.CAMERA_FACING_BACK ? 1 : 0);
+//            faceunity.fuItemSetParam(itemHandle, "loc_x_flip", mCurrentCameraType == Camera.CameraInfo.CAMERA_FACING_BACK ? 1 : 0);
+//            faceunity.fuItemSetParam(itemHandle, "rotMode", mRotMode);
+//        }
+        if (effectType == Effect.EFFECT_TYPE_ANIMOJI) {
+            // 设置人转向的方向
+            faceunity.fuItemSetParam(itemHandle, "isFlipTrack", mCurrentCameraType == Camera.CameraInfo.CAMERA_FACING_BACK ? 1 : 0);
+            // 设置 Animoji 跟随人脸
+            faceunity.fuItemSetParam(itemHandle, "{\"thing\":\"<global>\",\"param\":\"follow\"}", 1);
+        }
+        setMaxFaces(effect.maxFace());
     }
 
     /**
@@ -911,7 +951,7 @@ public class FURenderer implements OnFaceUnityControlListener {
         private int inputTextureType = 0;
         private boolean needReadBackImage = false;
         private int inputImageFormat = 0;
-        private int inputImageRotation = 0;
+        private int inputImageRotation = 270;
         private boolean isNeedAnimoji3D = false;
         private boolean isNeedFaceBeauty = true;
 
