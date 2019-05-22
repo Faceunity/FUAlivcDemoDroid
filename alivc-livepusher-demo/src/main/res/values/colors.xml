@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#3F51B5</color>
+    <color name="colorPrimaryDark">#303F9F</color>
+    <color name="colorAccent">#FF4081</color>
+
+    <color name="thumbGradient">#eeeeee</color>
+    <color name="thumbOnColor">#4CD864</color>
+    <color name="trackGradient">#888888</color>
+    <color name="trackOnColor">#4CD864</color>
+
+    <color name="background_blue">#2d44f4</color>
+
+    <color name="red">#ffff0000</color>
+    <color name="darker_gray">#aaa</color>
+    <color name="text_blue">#2d44f4</color>
+
+    <color name="yellow">#ffff00</color>
+    <color name="transparent">#50000000</color>
+    <color name="light_gray">#30000000</color>
+
+    <color name="text_green">#00c0fb</color>
+    <color name="text_black">#333333</color>
+</resources>
