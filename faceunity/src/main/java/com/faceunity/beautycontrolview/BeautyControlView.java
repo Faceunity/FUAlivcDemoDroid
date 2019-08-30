@@ -129,6 +129,10 @@ public class BeautyControlView extends FrameLayout {
                 mFaceShapeBeautyBoxGroup.check(View.NO_ID);
             }
         });
+
+        mEffects = EffectEnum.getEffects();
+        mBeautyFilters = FilterEnum.getFiltersByFilterType(Filter.FILTER_TYPE_BEAUTY_FILTER);
+        mFilters = FilterEnum.getFiltersByFilterType(Filter.FILTER_TYPE_FILTER);
     }
 
     private void initView() {
@@ -143,7 +147,7 @@ public class BeautyControlView extends FrameLayout {
     }
 
     private void initViewBottomRadio() {
-        mBottomCheckGroup = findViewById(R.id.beauty_radio_group);
+        mBottomCheckGroup = (CheckGroup) findViewById(R.id.beauty_radio_group);
         mBottomCheckGroup.setOnCheckedChangeListener(new CheckGroup.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CheckGroup group, int checkedId) {
@@ -156,7 +160,7 @@ public class BeautyControlView extends FrameLayout {
     private void initViewSkinBeauty() {
         mSkinBeautySelect = (HorizontalScrollView) findViewById(R.id.skin_beauty_select_block);
 
-        mSkinBeautyBoxGroup = findViewById(R.id.beauty_box_skin_beauty);
+        mSkinBeautyBoxGroup = (BeautyBoxGroup) findViewById(R.id.beauty_box_skin_beauty);
         mSkinBeautyBoxGroup.setOnCheckedChangeListener(new BeautyBoxGroup.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(BeautyBoxGroup group, int checkedId, boolean isChecked) {
@@ -246,7 +250,7 @@ public class BeautyControlView extends FrameLayout {
     private void initViewFaceShape() {
         mFaceShapeSelect = (HorizontalScrollView) findViewById(R.id.face_shape_select_block);
 
-        mFaceShapeBeautyBoxGroup = findViewById(R.id.beauty_box_face_shape);
+        mFaceShapeBeautyBoxGroup = (BeautyBoxGroup) findViewById(R.id.beauty_box_face_shape);
         mFaceShapeBeautyBoxGroup.setOnCheckedChangeListener(new BeautyBoxGroup.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(BeautyBoxGroup group, int checkedId, boolean isChecked) {
@@ -346,11 +350,11 @@ public class BeautyControlView extends FrameLayout {
                 changeBottomLayoutAnimator(false);
             }
         });
-        mFaceShapeBox = findViewById(R.id.face_shape_box);
-        mChinLevelBox = findViewById(R.id.chin_level_box);
-        mForeheadLevelBox = findViewById(R.id.forehead_level_box);
-        mThinNoseLevelBox = findViewById(R.id.thin_nose_level_box);
-        mMouthShapeBox = findViewById(R.id.mouth_shape_box);
+        mFaceShapeBox = (BeautyBox) findViewById(R.id.face_shape_box);
+        mChinLevelBox = (BeautyBox) findViewById(R.id.chin_level_box);
+        mForeheadLevelBox = (BeautyBox) findViewById(R.id.forehead_level_box);
+        mThinNoseLevelBox = (BeautyBox) findViewById(R.id.thin_nose_level_box);
+        mMouthShapeBox = (BeautyBox) findViewById(R.id.mouth_shape_box);
     }
 
     private void updateViewFaceShape() {
@@ -638,9 +642,6 @@ public class BeautyControlView extends FrameLayout {
                     if (mOnFaceUnityControlListener != null) {
                         mOnFaceUnityControlListener.onEffectSelected(click);
                     }
-                    if (mOnEffectSelectedListener != null) {
-                        mOnEffectSelectedListener.onEffectSelected(click);
-                    }
                     playMusic(click);
                     notifyDataSetChanged();
                 }
@@ -904,19 +905,4 @@ public class BeautyControlView extends FrameLayout {
         playMusic(mEffects.get(mEffectPositionSelect));
     }
 
-    public interface OnEffectSelectedListener {
-
-        /**
-         * 道具贴纸选择
-         *
-         * @param effectItemName 道具贴纸文件名
-         */
-        void onEffectSelected(Effect effectItemName);
-    }
-
-    private OnEffectSelectedListener mOnEffectSelectedListener;
-
-    public void setOnEffectSelectedListener(OnEffectSelectedListener onEffectSelectedListener) {
-        mOnEffectSelectedListener = onEffectSelectedListener;
-    }
 }
