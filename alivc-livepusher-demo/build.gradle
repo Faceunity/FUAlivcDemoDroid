@@ -40,38 +40,20 @@ android {
         exclude 'META-INF/license.txt'
     }
     publishNonDefault true
-//    externalNativeBuild {
-//        cmake {
-//        }
-//    }
     lintOptions {
         checkReleaseBuilds false
         abortOnError false
         disable 'MissingTranslation'
     }
-
-    allprojects {
-        repositories {
-            jcenter()
-            flatDir {
-                dirs 'src/main/libs'
-            }
-        }
-    }
-
-    buildToolsVersion '28.0.3'
 }
 
 dependencies {
-    implementation fileTree(include: ['*.jar', '*.aar'], dir: 'libs')
-    implementation fileTree(include: ['*.jar'], dir: 'src/main/libs')
-    implementation fileTree(include: ['*.aar'], dir: 'src/main/libs')
+    implementation fileTree(include: ['*.jar', '*.aar'], dir: 'src/main/libs')
     implementation externalAndroidAppCompatV7
     implementation externalAndroidSupportV4
     implementation externalAndroidRecyclerView
     implementation 'com.acker:simplezxing:1.5'
-    implementation 'com.google.code.gson:gson:2.6.2'
+    implementation 'com.google.code.gson:gson:2.8.5'
     implementation externalAndroidMultiDex
     implementation project(path: ':faceunity')
-
 }
