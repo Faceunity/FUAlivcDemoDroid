@@ -30,25 +30,24 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 
+import com.alivc.component.custom.AlivcLivePushCustomDetect;
+import com.alivc.component.custom.AlivcLivePushCustomFilter;
 import com.alivc.live.detect.TaoFaceFilter;
 import com.alivc.live.filter.TaoBeautyFilter;
 import com.alivc.live.pusher.AlivcLivePushConfig;
-import com.alivc.component.custom.AlivcLivePushCustomDetect;
-import com.alivc.component.custom.AlivcLivePushCustomFilter;
 import com.alivc.live.pusher.AlivcLivePushStatsInfo;
 import com.alivc.live.pusher.AlivcLivePusher;
 import com.alivc.live.pusher.AlivcPreviewOrientationEnum;
 import com.alivc.live.pusher.LogUtil;
 import com.alivc.live.pusher.SurfaceStatus;
 import com.alivc.live.pusher.demo.utils.PreferenceUtil;
-import com.faceunity.beautycontrolview.BeautyControlView;
-import com.faceunity.beautycontrolview.FURenderer;
+import com.faceunity.nama.FURenderer;
+import com.faceunity.nama.ui.BeautyControlView;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -122,8 +121,8 @@ public class LivePushActivity extends AppCompatActivity {
     private int mNetWork = 0;
 
     private FURenderer mFURenderer;
-    private BeautyControlView mBeautyControlView;
-    private String isOpen;
+    private boolean mIsFuBeautyOn;
+    private int mSkippedFrames;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -158,24 +157,19 @@ public class LivePushActivity extends AppCompatActivity {
             showDialog(this, e.getMessage());
         }
 
-        isOpen = PreferenceUtil.getString(LiveApplication.getInstance(),
-                PreferenceUtil.KEY_FACEUNITY_ISON);
-        mBeautyControlView = (BeautyControlView) findViewById(R.id.faceunity_control_view);
-
-        if (isOpen.equals("true")) {
+        String isOpen = PreferenceUtil.getString(LiveApplication.getInstance(), PreferenceUtil.KEY_FACEUNITY_ISON);
+        mIsFuBeautyOn = "true".equals(isOpen);
+        BeautyControlView beautyControlView = findViewById(R.id.faceunity_control_view);
+        if (mIsFuBeautyOn) {
+            FURenderer.initFURenderer(this);
             mFURenderer = new FURenderer
                     .Builder(this)
-                    .maxFaces(1)
-                    .inputTextureType(0)
-                    .createEGLContext(false)
-                    .needReadBackImage(false)
-                    .defaultEffect(null)
+                    .setInputTextureType(FURenderer.INPUT_2D_TEXTURE)
                     .build();
-            mBeautyControlView.setOnFaceUnityControlListener(mFURenderer);
+            beautyControlView.setOnFaceUnityControlListener(mFURenderer);
         } else {
-            mBeautyControlView.setVisibility(View.GONE);
+            beautyControlView.setVisibility(View.GONE);
         }
-
 
         mAlivcLivePusher.setCustomDetect(new AlivcLivePushCustomDetect() {
             @Override
@@ -200,21 +194,22 @@ public class LivePushActivity extends AppCompatActivity {
             }
         });
 
+        // 自定义美颜 faceunity
         mAlivcLivePusher.setCustomFilter(new AlivcLivePushCustomFilter() {
             @Override
             public void customFilterCreate() {
-                if (isOpen.equals("true")) {
-                    mFURenderer.loadItems();
-                } else {
+                Log.d(TAG, "customFilterCreate: ");
+                if (!mIsFuBeautyOn) {
                     taoBeautyFilter = new TaoBeautyFilter();
                     taoBeautyFilter.customFilterCreate();
+                } else {
+                    mFURenderer.onSurfaceCreated();
                 }
-
             }
 
             @Override
             public void customFilterUpdateParam(float fSkinSmooth, float fWhiten, float fWholeFacePink, float fThinFaceHorizontal, float fCheekPink, float fShortenFaceVertical, float fBigEye) {
-                if (isOpen.equals("false")) {
+                if (!mIsFuBeautyOn) {
                     if (taoBeautyFilter != null) {
                         taoBeautyFilter.customFilterUpdateParam(fSkinSmooth, fWhiten, fWholeFacePink, fThinFaceHorizontal, fCheekPink, fShortenFaceVertical, fBigEye);
                     }
@@ -223,7 +218,8 @@ public class LivePushActivity extends AppCompatActivity {
 
             @Override
             public void customFilterSwitch(boolean on) {
-                if (isOpen.equals("false")) {
+                Log.d(TAG, "customFilterSwitch: " + on);
+                if (!mIsFuBeautyOn) {
                     if (taoBeautyFilter != null) {
                         taoBeautyFilter.customFilterSwitch(on);
                     }
@@ -232,33 +228,44 @@ public class LivePushActivity extends AppCompatActivity {
 
             @Override
             public int customFilterProcess(int inputTexture, int textureWidth, int textureHeight, long extra) {
-                if (isOpen.equals("false")) {
+                if (!mIsFuBeautyOn) {
                     if (taoBeautyFilter != null) {
                         return taoBeautyFilter.customFilterProcess(inputTexture, textureWidth, textureHeight, extra);
                     }
                     return inputTexture;
                 }
-                return mFURenderer.onDrawFrameSingleInputTex(inputTexture, textureWidth, textureHeight);
+                int fuTex = mFURenderer.onDrawFrameSingleInput(inputTexture, textureWidth, textureHeight);
+                if (mSkippedFrames > 0) {
+                    mSkippedFrames--;
+                    return inputTexture;
+                }
+                return fuTex;
             }
 
             @Override
             public void customFilterDestroy() {
-                if (isOpen.equals("false")) {
+                Log.d(TAG, "customFilterDestroy: ");
+                if (!mIsFuBeautyOn) {
                     if (taoBeautyFilter != null) {
                         taoBeautyFilter.customFilterDestroy();
                     }
                     taoBeautyFilter = null;
                 } else {
-                    mFURenderer.destroyItems();
+                    mFURenderer.onSurfaceDestroyed();
                 }
             }
         });
 
-
-        mLivePushFragment = new LivePushFragment().newInstance(mPushUrl, mAsync, mAudioOnly, mVideoOnly, mCameraId, mFlash, mAlivcLivePushConfig.getQualityMode().getQualityMode(), mAuthTime, mPrivacyKey, mMixExtern, mMixMain);
+        mLivePushFragment = LivePushFragment.newInstance(mPushUrl, mAsync, mAudioOnly, mVideoOnly, mCameraId, mFlash, mAlivcLivePushConfig.getQualityMode().getQualityMode(), mAuthTime, mPrivacyKey, mMixExtern, mMixMain);
         mLivePushFragment.setAlivcLivePusher(mAlivcLivePusher);
         mLivePushFragment.setStateListener(mStateListener);
-        mLivePushFragment.setFURenderer(mFURenderer);
+        mLivePushFragment.setOnCameraSwitchedListener(mIsFuBeautyOn ? new LivePushFragment.OnCameraSwitchedListener() {
+            @Override
+            public void onCameraSwitched(int cameraId) {
+                mSkippedFrames = 5;
+                mFURenderer.onCameraChange(cameraId, FURenderer.getCameraOrientation(cameraId));
+            }
+        } : null);
         mPushTextStatsFragment = new PushTextStatsFragment();
         mPushDiagramStatsFragment = new PushDiagramStatsFragment();
 
@@ -688,6 +695,7 @@ public class LivePushActivity extends AppCompatActivity {
         new ScheduledThreadPoolExecutor(1, new ThreadFactory() {
             private AtomicInteger atoInteger = new AtomicInteger(0);
 
+            @Override
             public Thread newThread(Runnable r) {
                 Thread t = new Thread(r);
                 t.setName("LivePushActivity-readYUV-Thread" + atoInteger.getAndIncrement());

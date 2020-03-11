@@ -1,27 +1,24 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 buildscript {
     repositories {
-       jcenter()
         google()
-        flatDir {
-            dirs 'src/main/aarLibs'
-        }
+        jcenter()
+        maven { url 'http://maven.aliyun.com/nexus/content/repositories/google' }
+        maven { url 'http://maven.aliyun.com/nexus/content/repositories/jcenter' }
     }
     apply from: file('config.gradle').exists() ? 'config.gradle' : 'config-stable.gradle'
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.4.1'
+        classpath 'com.android.tools.build:gradle:3.4.2'
     }
 }
 
 allprojects {
     repositories {
-        jcenter()
         google()
-        maven { url 'http://mvnrepo.alibaba-inc.com/mvn/repository'}
-        flatDir {
-            dirs 'src/main/aarLibs'
-            dirs '../alivc-player-lib'
-        }
+        jcenter()
+        maven { url 'http://maven.aliyun.com/nexus/content/repositories/google' }
+        maven { url 'http://maven.aliyun.com/nexus/content/repositories/jcenter' }
+        maven { url 'http://mvnrepo.alibaba-inc.com/mvn/repository' }
     }
 }
 

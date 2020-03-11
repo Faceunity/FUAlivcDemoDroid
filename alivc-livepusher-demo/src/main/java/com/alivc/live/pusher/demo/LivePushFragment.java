@@ -3,7 +3,6 @@ package com.alivc.live.pusher.demo;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.Bitmap;
-import android.graphics.Bitmap.CompressFormat;
 import android.hardware.Camera;
 import android.os.Bundle;
 import android.os.Environment;
@@ -23,7 +22,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.alivc.live.pusher.AlivcImageFormat;
 import com.alivc.live.pusher.AlivcLivePushBGMListener;
 import com.alivc.live.pusher.AlivcLivePushError;
 import com.alivc.live.pusher.AlivcLivePushErrorListener;
@@ -31,8 +29,6 @@ import com.alivc.live.pusher.AlivcLivePushInfoListener;
 import com.alivc.live.pusher.AlivcLivePushNetworkListener;
 import com.alivc.live.pusher.AlivcLivePusher;
 import com.alivc.live.pusher.AlivcSnapshotListener;
-import com.alivc.live.pusher.AlivcSoundFormat;
-import com.faceunity.beautycontrolview.FURenderer;
 
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
@@ -127,10 +123,20 @@ public class LivePushFragment extends Fragment implements Runnable {
     private String mPrivacyKey = "";
 
     Vector<Integer> mDynamicals = new Vector<>();
-    private FURenderer mFURenderer;
 
-    public void setFURenderer(FURenderer FURenderer) {
-        mFURenderer = FURenderer;
+    public interface OnCameraSwitchedListener {
+        /**
+         * call when camera switched
+         *
+         * @param cameraId
+         */
+        void onCameraSwitched(int cameraId);
+    }
+
+    private OnCameraSwitchedListener mOnCameraSwitchedListener;
+
+    public void setOnCameraSwitchedListener(OnCameraSwitchedListener onCameraSwitchedListener) {
+        mOnCameraSwitchedListener = onCameraSwitchedListener;
     }
 
     public static LivePushFragment newInstance(String url, boolean async, boolean mAudio, boolean mVideoOnly, int cameraId, boolean isFlash, int mode, String authTime, String privacyKey, boolean mixExtern, boolean mixMain) {
@@ -263,7 +269,7 @@ public class LivePushFragment extends Fragment implements Runnable {
         mCamera.setVisibility(mAudio ? View.GONE : View.VISIBLE);
         mFlash.setClickable(mCameraId == CAMERA_TYPE_FRONT.getCameraId() ? false : true);
 
-        if (mFURenderer != null) {
+        if (mOnCameraSwitchedListener != null) {
             mBeautyButton.setVisibility(View.GONE);
         }
     }
@@ -315,13 +321,14 @@ public class LivePushFragment extends Fragment implements Runnable {
                                 } else {
                                     mCameraId = CAMERA_TYPE_FRONT.getCameraId();
                                 }
-                                if (mFURenderer != null)
-                                    mFURenderer.onCameraChange(mCameraId, 0);
                                 mAlivcLivePusher.switchCamera();
+                                if (mOnCameraSwitchedListener != null) {
+                                    mOnCameraSwitchedListener.onCameraSwitched(mCameraId);
+                                }
                                 mFlash.post(new Runnable() {
                                     @Override
                                     public void run() {
-                                        mFlash.setClickable(mCameraId == CAMERA_TYPE_FRONT.getCameraId() ? false : true);
+                                        mFlash.setClickable(mCameraId != CAMERA_TYPE_FRONT.getCameraId());
                                         if (mCameraId == CAMERA_TYPE_FRONT.getCameraId()) {
                                             mFlash.setSelected(false);
                                         } else {
