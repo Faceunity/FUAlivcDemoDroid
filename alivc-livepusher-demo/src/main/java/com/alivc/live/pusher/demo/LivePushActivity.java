@@ -263,7 +263,7 @@ public class LivePushActivity extends AppCompatActivity {
             @Override
             public void onCameraSwitched(int cameraId) {
                 mSkippedFrames = 5;
-                mFURenderer.onCameraChange(cameraId, FURenderer.getCameraOrientation(cameraId));
+                mFURenderer.onCameraChanged(cameraId, FURenderer.getCameraOrientation(cameraId));
             }
         } : null);
         mPushTextStatsFragment = new PushTextStatsFragment();
