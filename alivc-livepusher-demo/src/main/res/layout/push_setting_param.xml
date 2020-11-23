@@ -33,7 +33,7 @@
                 android:layout_height="wrap_content"
                 android:maxHeight="5dp"
                 android:minHeight="5dp"
-                android:progress="80" />
+                android:progress="85" />
 
             <TextView
                 android:id="@+id/resolution_text"
@@ -74,7 +74,6 @@
                     android:layout_weight="2"
                     android:textSize="@dimen/font_size_28px"
                     android:button="@null"
-                    android:checked="true"
                     android:text="@string/quality_resolution_first" />
 
                 <RadioButton
@@ -97,6 +96,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:layout_weight="2"
+                    android:checked="true"
                     android:button="@null"
                     android:textSize="@dimen/font_size_28px"
                     android:text="@string/quality_custom" />
@@ -258,7 +258,7 @@
                 android:layout_height="wrap_content"
                 android:maxHeight="5dp"
                 android:minHeight="5dp"
-                android:progress="0" />
+                android:progress="90" />
 
             <TextView
                 android:id="@+id/min_fps_text"
@@ -293,7 +293,7 @@
                 android:layout_height="wrap_content"
                 android:maxHeight="5dp"
                 android:minHeight="5dp"
-                android:progress="66" />
+                android:progress="90" />
 
             <TextView
                 android:id="@+id/fps_text"
@@ -930,7 +930,7 @@
                     android:textOn=""
                     android:thumb="@drawable/thumb"
                     android:track="@drawable/track"
-                    android:checked="true"/>
+                    android:checked="false"/>
             </LinearLayout>
         </LinearLayout>
 

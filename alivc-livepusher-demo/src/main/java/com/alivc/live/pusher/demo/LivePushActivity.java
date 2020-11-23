@@ -8,6 +8,10 @@ import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.hardware.Camera;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.net.ConnectivityManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -29,6 +33,7 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.TextView;
 
 import com.alivc.component.custom.AlivcLivePushCustomDetect;
 import com.alivc.component.custom.AlivcLivePushCustomFilter;
@@ -40,9 +45,11 @@ import com.alivc.live.pusher.AlivcLivePusher;
 import com.alivc.live.pusher.AlivcPreviewOrientationEnum;
 import com.alivc.live.pusher.LogUtil;
 import com.alivc.live.pusher.SurfaceStatus;
+import com.alivc.live.pusher.demo.custom.CameraRenderer;
 import com.alivc.live.pusher.demo.utils.PreferenceUtil;
 import com.faceunity.nama.FURenderer;
-import com.faceunity.nama.ui.BeautyControlView;
+import com.faceunity.nama.ui.FaceUnityView;
+import com.faceunity.nama.utils.CameraUtils;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -50,6 +57,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -58,7 +67,7 @@ import static com.alivc.live.pusher.AlivcPreviewOrientationEnum.ORIENTATION_LAND
 import static com.alivc.live.pusher.AlivcPreviewOrientationEnum.ORIENTATION_LANDSCAPE_HOME_RIGHT;
 import static com.alivc.live.pusher.AlivcPreviewOrientationEnum.ORIENTATION_PORTRAIT;
 
-public class LivePushActivity extends AppCompatActivity {
+public class LivePushActivity extends AppCompatActivity implements SensorEventListener {
     private static final String TAG = "LivePushActivity";
     private static final int FLING_MIN_DISTANCE = 50;
     private static final int FLING_MIN_VELOCITY = 0;
@@ -122,7 +131,10 @@ public class LivePushActivity extends AppCompatActivity {
 
     private FURenderer mFURenderer;
     private boolean mIsFuBeautyOn;
-    private int mSkippedFrames;
+    private int mSkippedFrames = 5;
+    private SensorManager mSensorManager;
+    private TextView mTvFps;
+    private CameraRenderer mCameraRenderer;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -159,17 +171,37 @@ public class LivePushActivity extends AppCompatActivity {
 
         String isOpen = PreferenceUtil.getString(LiveApplication.getInstance(), PreferenceUtil.KEY_FACEUNITY_ISON);
         mIsFuBeautyOn = "true".equals(isOpen);
-        BeautyControlView beautyControlView = findViewById(R.id.faceunity_control_view);
-        if (mIsFuBeautyOn) {
-            FURenderer.initFURenderer(this);
+        FaceUnityView beautyControlView = findViewById(R.id.faceunity_control_view);
+        if (mIsFuBeautyOn && !mAlivcLivePushConfig.isExternMainStream()) {
+            FURenderer.setup(this);
             mFURenderer = new FURenderer
                     .Builder(this)
-                    .setInputTextureType(FURenderer.INPUT_2D_TEXTURE)
+                    .setInputTextureType(FURenderer.INPUT_TEXTURE_2D)
+                    .setRunBenchmark(true)
+                    .setOnDebugListener(new FURenderer.OnDebugListener() {
+                        @Override
+                        public void onFpsChanged(double fps, double callTime) {
+                            final String FPS = String.format(Locale.getDefault(), "%.2f", fps);
+                            Log.e(TAG, "onFpsChanged: FPS " + FPS + " callTime " + String.format(Locale.getDefault(), "%.2f", callTime));
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    if (mTvFps != null) {
+                                        mTvFps.setText("FPS: " + FPS);
+                                    }
+                                }
+                            });
+                        }
+                    })
                     .build();
-            beautyControlView.setOnFaceUnityControlListener(mFURenderer);
+            beautyControlView.setModuleManager(mFURenderer);
         } else {
             beautyControlView.setVisibility(View.GONE);
         }
+
+        mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+        Sensor sensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        mSensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_NORMAL);
 
         mAlivcLivePusher.setCustomDetect(new AlivcLivePushCustomDetect() {
             @Override
@@ -237,7 +269,7 @@ public class LivePushActivity extends AppCompatActivity {
                 int fuTex = mFURenderer.onDrawFrameSingleInput(inputTexture, textureWidth, textureHeight);
                 if (mSkippedFrames > 0) {
                     mSkippedFrames--;
-                    return inputTexture;
+                    return 0;
                 }
                 return fuTex;
             }
@@ -259,13 +291,21 @@ public class LivePushActivity extends AppCompatActivity {
         mLivePushFragment = LivePushFragment.newInstance(mPushUrl, mAsync, mAudioOnly, mVideoOnly, mCameraId, mFlash, mAlivcLivePushConfig.getQualityMode().getQualityMode(), mAuthTime, mPrivacyKey, mMixExtern, mMixMain);
         mLivePushFragment.setAlivcLivePusher(mAlivcLivePusher);
         mLivePushFragment.setStateListener(mStateListener);
-        mLivePushFragment.setOnCameraSwitchedListener(mIsFuBeautyOn ? new LivePushFragment.OnCameraSwitchedListener() {
+        mLivePushFragment.setOnCameraSwitchedListener(new LivePushFragment.OnCameraSwitchedListener() {
             @Override
             public void onCameraSwitched(int cameraId) {
-                mSkippedFrames = 5;
-                mFURenderer.onCameraChanged(cameraId, FURenderer.getCameraOrientation(cameraId));
+                if (mFURenderer != null) {
+                    mSkippedFrames = 5;
+                    mFURenderer.onCameraChanged(cameraId, CameraUtils.getCameraOrientation(cameraId));
+                    if (mFURenderer.getMakeupModule() != null) {
+                        mFURenderer.getMakeupModule().setIsMakeupFlipPoints(cameraId == Camera.CameraInfo.CAMERA_FACING_FRONT ? 0 : 1);
+                    }
+                }
+                if (mCameraRenderer != null) {
+                    mCameraRenderer.switchCamera();
+                }
             }
-        } : null);
+        });
         mPushTextStatsFragment = new PushTextStatsFragment();
         mPushDiagramStatsFragment = new PushDiagramStatsFragment();
 
@@ -281,6 +321,7 @@ public class LivePushActivity extends AppCompatActivity {
     public void initView() {
         mPreviewView = (SurfaceView) findViewById(R.id.preview_view);
         mPreviewView.getHolder().addCallback(mCallback);
+        mTvFps = findViewById(R.id.tv_fps);
     }
 
     private void initViewPager() {
@@ -436,7 +477,8 @@ public class LivePushActivity extends AppCompatActivity {
                             mAlivcLivePusher.startPreview(mPreviewView);
                         }
                         if (mAlivcLivePushConfig.isExternMainStream()) {
-                            startYUV(getApplicationContext());
+//                            startYUV(getApplicationContext());
+                            startCustom();
                         }
                     } catch (IllegalArgumentException e) {
                         e.toString();
@@ -527,6 +569,9 @@ public class LivePushActivity extends AppCompatActivity {
     protected void onDestroy() {
         videoThreadOn = false;
         audioThreadOn = false;
+        if (mSensorManager != null) {
+            mSensorManager.unregisterListener(this);
+        }
         if (mAlivcLivePusher != null) {
             try {
                 mAlivcLivePusher.destroy();
@@ -556,6 +601,34 @@ public class LivePushActivity extends AppCompatActivity {
         alivcLivePushStatsInfo = null;
         super.onDestroy();
     }
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+            float x = event.values[0];
+            float y = event.values[1];
+            if (Math.abs(x) > 3 || Math.abs(y) > 3) {
+                if (Math.abs(x) > Math.abs(y)) {
+                    if (mFURenderer != null) {
+                        mFURenderer.onDeviceOrientationChanged(x > 0 ? 270 : 90);
+                    }
+                    if (mCameraRenderer != null) {
+                        mCameraRenderer.getFURenderer().onDeviceOrientationChanged(x > 0 ? 270 : 90);
+                    }
+                } else {
+                    if (mFURenderer != null) {
+                        mFURenderer.onDeviceOrientationChanged(y > 0 ? 0 : 180);
+                    }
+                    if (mCameraRenderer != null) {
+                        mCameraRenderer.getFURenderer().onDeviceOrientationChanged(y > 0 ? 0 : 180);
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {}
 
     public class FragmentAdapter extends FragmentPagerAdapter {
 
@@ -740,6 +813,39 @@ public class LivePushActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+
+    public void startCustom() {
+        FURenderer.setup(this);
+        mCameraRenderer = new CameraRenderer(this, new FURenderer.OnDebugListener() {
+            @Override
+            public void onFpsChanged(double fps, double callTime) {
+                final String FPS = String.format(Locale.getDefault(), "%.2f", fps);
+                Log.e(TAG, "onFpsChanged: FPS " + FPS + " callTime " + String.format(Locale.getDefault(), "%.2f", callTime));
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (mTvFps != null) {
+                            mTvFps.setText("FPS: " + FPS);
+                        }
+                    }
+                });
+            }
+        }, mAlivcLivePusher);
+
+        mCameraRenderer.onResume();
+        FaceUnityView beautyControlView = findViewById(R.id.faceunity_control_view);
+        beautyControlView.setModuleManager(mCameraRenderer.getFURenderer());
+        beautyControlView.setVisibility(View.VISIBLE);
+    }
+
+    @Override
+    public void finish() {
+        super.finish();
+        if (mCameraRenderer != null) {
+            mCameraRenderer.onPause();
+        }
+
     }
 
     private void stopYUV() {

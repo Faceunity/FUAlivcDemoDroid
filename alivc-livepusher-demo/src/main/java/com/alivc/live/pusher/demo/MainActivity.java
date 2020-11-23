@@ -21,11 +21,6 @@ public class MainActivity extends ListActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        //首次安装按home键置入后台，从桌面图标点击重新启动的问题
-        if (!isTaskRoot()) {
-            finish();
-            return;
-        }
 
         setContentView(R.layout.activity_main);
         modules = new String[]{

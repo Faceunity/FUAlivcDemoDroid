@@ -14,6 +14,7 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
@@ -172,7 +173,7 @@ public class PushConfigActivity extends AppCompatActivity {
     private boolean mAudioOnlyPush = false;
     private boolean mVideoOnlyPush = false;
     private AlivcPreviewOrientationEnum mOrientationEnum = ORIENTATION_PORTRAIT;
-    private AlivcQualityModeEnum mQualityModeEnum = AlivcQualityModeEnum.QM_RESOLUTION_FIRST;
+    private AlivcQualityModeEnum mQualityModeEnum = AlivcQualityModeEnum.QM_CUSTOM;
 
     private ArrayList<WaterMarkInfo> waterMarkInfos = new ArrayList<>();
 
@@ -196,6 +197,7 @@ public class PushConfigActivity extends AppCompatActivity {
 //        getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.push_setting);
         mAlivcLivePushConfig = new AlivcLivePushConfig();
+        mAlivcLivePushConfig.setQualityMode(mQualityModeEnum);
         if(mAlivcLivePushConfig.getPreviewOrientation() == AlivcPreviewOrientationEnum.ORIENTATION_LANDSCAPE_HOME_RIGHT.getOrientation() || mAlivcLivePushConfig.getPreviewOrientation() == AlivcPreviewOrientationEnum.ORIENTATION_LANDSCAPE_HOME_LEFT.getOrientation())
         {
             mAlivcLivePushConfig.setNetworkPoorPushImage(Environment.getExternalStorageDirectory().getPath() + File.separator + "alivc_resource/poor_network_land.png");
@@ -313,8 +315,6 @@ public class PushConfigActivity extends AppCompatActivity {
         SharedPreferenceUtils.setHintTargetBit(getApplicationContext(), AlivcLivePushConstants.BITRATE_540P_RESOLUTION_FIRST.DEFAULT_VALUE_INT_TARGET_BITRATE.getBitrate());
         SharedPreferenceUtils.setHintMinBit(getApplicationContext(), AlivcLivePushConstants.BITRATE_540P_RESOLUTION_FIRST.DEFAULT_VALUE_INT_MIN_BITRATE.getBitrate());
         turnOnBitRateFps(false);
-
-        mUrl.setText(PushAuth.wrapAuthUrl());
     }
 
     private void setClick() {
@@ -331,10 +331,13 @@ public class PushConfigActivity extends AppCompatActivity {
         mAutoFocus.setOnCheckedChangeListener(onCheckedChangeListener);
         mBeautyOn.setOnCheckedChangeListener(onCheckedChangeListener);
         mResolution.setOnSeekBarChangeListener(onSeekBarChangeListener);
+        mResolution.setProgress(100);
         mAudioRate.setOnSeekBarChangeListener(onSeekBarChangeListener);
         mExtern.setOnCheckedChangeListener(onCheckedChangeListener);
         mFps.setOnSeekBarChangeListener(onSeekBarChangeListener);
+        mFps.setProgress(100);
         mMinFps.setOnSeekBarChangeListener(onSeekBarChangeListener);
+        mMinFps.setProgress(100);
         mAsync.setOnCheckedChangeListener(onCheckedChangeListener);
         mFlash.setOnCheckedChangeListener(onCheckedChangeListener);
         mLog.setOnCheckedChangeListener(onCheckedChangeListener);
@@ -370,7 +373,9 @@ public class PushConfigActivity extends AppCompatActivity {
                 case R.id.beginPublish:
                     //
                     if(getPushConfig() != null) {
-                        LivePushActivity.startActivity(PushConfigActivity.this, mAlivcLivePushConfig, mUrl.getText().toString(), mAsyncValue, mAudioOnlyPush, mVideoOnlyPush, mOrientationEnum, mCameraId, isFlash, mAuthTimeStr, mPrivacyKeyStr, mMixStream, mAlivcLivePushConfig.isExternMainStream());
+                        String roomId = mUrl.getText().toString().trim();
+                        String url = "请输入推流地址-" + roomId;
+                        LivePushActivity.startActivity(PushConfigActivity.this, mAlivcLivePushConfig, url, mAsyncValue, mAudioOnlyPush, mVideoOnlyPush, mOrientationEnum, mCameraId, isFlash, mAuthTimeStr, mPrivacyKeyStr, mMixStream, mAlivcLivePushConfig.isExternMainStream());
                     }
                     break;
                 case R.id.qr_code:
@@ -458,7 +463,7 @@ public class PushConfigActivity extends AppCompatActivity {
             {
                 mAlivcLivePushConfig.setEnableAutoResolution(isChecked);
             } else if(id == R.id.extern_video) {
-                mAlivcLivePushConfig.setExternMainStream(isChecked, AlivcImageFormat.IMAGE_FORMAT_YUVNV12, AlivcSoundFormat.SOUND_FORMAT_S16);
+                mAlivcLivePushConfig.setExternMainStream(isChecked, AlivcImageFormat.IMAGE_FORMAT_YUVNV21, AlivcSoundFormat.SOUND_FORMAT_S16);
                 mAlivcLivePushConfig.setAudioChannels(AlivcAudioChannelEnum.AUDIO_CHANNEL_ONE);
                 mAlivcLivePushConfig.setAudioSamepleRate(AlivcAudioSampleRateEnum.AUDIO_SAMPLE_RATE_44100);
             } else if(id == R.id.pause_image) {
@@ -649,6 +654,7 @@ public class PushConfigActivity extends AppCompatActivity {
                     mAudioRateText.setText(getString(R.string.setting_audio_480));
                 }
             }else if (mFps.getId() == seekBarId) {
+                Log.e(TAG, "onProgressChanged: mAlivcLivePushConfig.getQualityMode() " + mAlivcLivePushConfig.getQualityMode());
                 if(!mAlivcLivePushConfig.getQualityMode().equals(AlivcQualityModeEnum.QM_CUSTOM))
                 {
                     mFps.setProgress(83);

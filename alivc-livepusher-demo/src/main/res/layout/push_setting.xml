@@ -37,6 +37,12 @@
         android:layout_marginTop="10dp"
         android:orientation="horizontal">
 
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="10dp"
+            android:text="房间号"/>
+
         <EditText
             android:id="@+id/url_editor"
             android:layout_width="match_parent"
@@ -48,7 +54,7 @@
             android:inputType="text"
             android:textColorHint="@color/darker_gray"
             android:textSize="@dimen/font_size_28px"
-            android:text="rtmp://push-demo-rtmp.aliyunlive.com/test/stream6"/>
+            android:text="11"/>
         <ImageView
             android:id="@+id/qr_code"
             android:layout_width="match_parent"
