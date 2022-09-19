@@ -2,19 +2,15 @@
 package com.alivc.live.pusher.demo;
 
 import android.Manifest;
-import android.content.ClipData;
-import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.hardware.Camera;
 import android.os.Bundle;
-import android.os.Environment;
-import android.support.annotation.NonNull;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
+import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.appcompat.app.AppCompatActivity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
@@ -26,6 +22,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RadioGroup;
+import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -35,13 +32,13 @@ import com.acker.simplezxing.activity.CaptureActivity;
 import com.alivc.live.pusher.AlivcAudioAACProfileEnum;
 import com.alivc.live.pusher.AlivcAudioChannelEnum;
 import com.alivc.live.pusher.AlivcAudioSampleRateEnum;
-import com.alivc.live.pusher.AlivcBeautyLevelEnum;
 import com.alivc.live.pusher.AlivcEncodeModeEnum;
 import com.alivc.live.pusher.AlivcImageFormat;
 import com.alivc.live.pusher.AlivcLivePushCameraTypeEnum;
 import com.alivc.live.pusher.AlivcLivePushConfig;
 import com.alivc.live.pusher.AlivcLivePushConstants;
 import com.alivc.live.pusher.AlivcLivePushInfoListener;
+import com.alivc.live.pusher.AlivcLivePushStatsInfo;
 import com.alivc.live.pusher.AlivcLivePusher;
 import com.alivc.live.pusher.AlivcPreviewDisplayMode;
 import com.alivc.live.pusher.AlivcPreviewOrientationEnum;
@@ -49,7 +46,6 @@ import com.alivc.live.pusher.AlivcQualityModeEnum;
 import com.alivc.live.pusher.AlivcResolutionEnum;
 import com.alivc.live.pusher.AlivcSoundFormat;
 import com.alivc.live.pusher.WaterMarkInfo;
-import com.alivc.live.pusher.demo.auth.PushAuth;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -138,42 +134,24 @@ public class PushConfigActivity extends AppCompatActivity {
     private Switch mPauseImage;
     private Switch mNetworkImage;
     private ImageView mQr;
-    private ImageView mCopy;
     private ImageView mBack;
     private RadioGroup mAudioRadio;
     private RadioGroup mQualityMode;
     private RadioGroup mGop;
     private RadioGroup mOrientation;
     private RadioGroup mDisplayMode;
-    private RadioGroup mBeautyLevel;
+    //private RadioGroup mBeautyLevel;
     private RadioGroup mAudioProfiles;
-
-    //美颜相关数据
-    private SeekBar mCheekPinkBar;
-    private SeekBar mWhiteBar;
-    private SeekBar mSkinBar;
-    private SeekBar mRuddyBar;
-    private SeekBar mSlimFaceBar;
-    private SeekBar mShortenFaceBar;
-    private SeekBar mBigEyeBar;
-
-    private TextView mCheekpink;
-    private TextView mWhite;
-    private TextView mSkin;
-    private TextView mRuddy;
-    private TextView mSlimFace;
-    private TextView mShortenFace;
-    private TextView mBigEye;
     private TextView mPushTex;
 
-    private LinearLayout mWaterLinear;
+    //private LinearLayout mWaterLinear;
 
     private AlivcLivePushConfig mAlivcLivePushConfig;
     private boolean mAsyncValue = true;
     private boolean mAudioOnlyPush = false;
     private boolean mVideoOnlyPush = false;
     private AlivcPreviewOrientationEnum mOrientationEnum = ORIENTATION_PORTRAIT;
-    private AlivcQualityModeEnum mQualityModeEnum = AlivcQualityModeEnum.QM_CUSTOM;
+    private AlivcQualityModeEnum mQualityModeEnum = AlivcQualityModeEnum.QM_RESOLUTION_FIRST;
 
     private ArrayList<WaterMarkInfo> waterMarkInfos = new ArrayList<>();
 
@@ -188,23 +166,37 @@ public class PushConfigActivity extends AppCompatActivity {
 
     private AlivcLivePusher mAlivcLivePusher = null;
 
-    private ClipboardManager cm = null;
+    private CharSequence mCustomTargetBitrateValue = "";
+    private CharSequence mCustomMinBitrateValue = "";
+    private CharSequence mCustomInitBitrateValue = "";
+    private CharSequence mCustomAudioBitrateValue = "";
+
+    private RelativeLayout mTabArgsLayout;
+    private RelativeLayout mTabActionLayout;
+    private View mTabArgsView;
+    private View mTabActionView;
+    private LinearLayout mTabArgsContentLayout;
+    private LinearLayout mTabActionContentLayout;
+    private Switch mAdvanceConfig;
+    private LinearLayout mAdvanceLayout;
+    private int mFpsConfig = 25;//默认帧率
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-//        getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.push_setting);
         mAlivcLivePushConfig = new AlivcLivePushConfig();
-        mAlivcLivePushConfig.setQualityMode(mQualityModeEnum);
+        mAlivcLivePushConfig.setExtraInfo("such_as_user_id");
         if(mAlivcLivePushConfig.getPreviewOrientation() == AlivcPreviewOrientationEnum.ORIENTATION_LANDSCAPE_HOME_RIGHT.getOrientation() || mAlivcLivePushConfig.getPreviewOrientation() == AlivcPreviewOrientationEnum.ORIENTATION_LANDSCAPE_HOME_LEFT.getOrientation())
         {
-            mAlivcLivePushConfig.setNetworkPoorPushImage(Environment.getExternalStorageDirectory().getPath() + File.separator + "alivc_resource/poor_network_land.png");
-            mAlivcLivePushConfig.setPausePushImage(Environment.getExternalStorageDirectory().getPath() + File.separator + "alivc_resource/background_push_land.png");
+            mAlivcLivePushConfig.setNetworkPoorPushImage(getFilesDir().getPath() + File.separator + "alivc_resource/poor_network_land.png");
+            mAlivcLivePushConfig.setPausePushImage(getFilesDir().getPath() + File.separator + "alivc_resource/background_push_land.png");
         } else {
-            mAlivcLivePushConfig.setNetworkPoorPushImage(Environment.getExternalStorageDirectory().getPath() + File.separator + "alivc_resource/poor_network.png");
-            mAlivcLivePushConfig.setPausePushImage(Environment.getExternalStorageDirectory().getPath() + File.separator + "alivc_resource/background_push.png");
+            mAlivcLivePushConfig.setNetworkPoorPushImage(getFilesDir().getPath() + File.separator + "alivc_resource/poor_network.png");
+            mAlivcLivePushConfig.setPausePushImage(getFilesDir().getPath() + File.separator + "alivc_resource/background_push.png");
         }
         AlivcLivePushConfig.setMediaProjectionPermissionResultData(null);
         initView();
@@ -212,7 +204,12 @@ public class PushConfigActivity extends AppCompatActivity {
         Common.copyAsset(this);
         Common.copyAll(this);
         addWaterMarkInfo();
-        cm = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+        if(mAlivcLivePushConfig != null) {
+            mAlivcLivePushConfig.setPreviewDisplayMode(AlivcPreviewDisplayMode.ALIVC_LIVE_PUSHER_PREVIEW_ASPECT_FILL);
+            SharedPreferenceUtils.setDisplayFit(getApplicationContext(), AlivcPreviewDisplayMode.ALIVC_LIVE_PUSHER_PREVIEW_ASPECT_FILL
+
+                    .getPreviewDisplayMode());
+        }
     }
 
     private void turnOnBitRateFps(boolean on)
@@ -275,51 +272,46 @@ public class PushConfigActivity extends AppCompatActivity {
         mAutoFocus = (Switch) findViewById(R.id.autofocus_switch);
         mBeautyOn = (Switch) findViewById(R.id.beautyOn_switch);
         mAsync = (Switch) findViewById(R.id.async_switch);
-        mFlash = (Switch) findViewById(R.id.flash_switch);
+        mAdvanceConfig = (Switch) findViewById(R.id.advance_config);
         mLog = (Switch) findViewById(R.id.log_switch);
         mBitrate = (Switch) findViewById(R.id.bitrate_control);
         mVariableResolution = (Switch) findViewById(R.id.variable_resolution);
         mExtern = (Switch) findViewById(R.id.extern_video);
-        //mExternMix = (Switch) findViewById(R.id.extern_video_mix);
         mPauseImage = (Switch) findViewById(R.id.pause_image);
         mNetworkImage = (Switch) findViewById(R.id.network_image);
         mQr = (ImageView) findViewById(R.id.qr_code);
-        mCopy = (ImageView) findViewById(R.id.copy_paste);
         mBack = (ImageView) findViewById(R.id.iv_back);
         mAudioRadio = (RadioGroup) findViewById(R.id.main_audio);
         mQualityMode = (RadioGroup) findViewById(R.id.quality_modes);
         mGop = (RadioGroup) findViewById(R.id.main_gop);
         mOrientation = (RadioGroup) findViewById(R.id.main_orientation);
         mDisplayMode = (RadioGroup) findViewById(R.id.setting_display_mode);
-        mBeautyLevel = (RadioGroup) findViewById(R.id.beauty_modes);
         mAudioProfiles = (RadioGroup) findViewById(R.id.audio_profiles);
-
-        mCheekPinkBar = (SeekBar) findViewById(R.id.beauty_cheekpink_seekbar);
-        mWhiteBar = (SeekBar) findViewById(R.id.beauty_white_seekbar);
-        mSkinBar = (SeekBar) findViewById(R.id.beauty_skin_seekbar);
-        mRuddyBar = (SeekBar) findViewById(R.id.beauty_ruddy_seekbar);
-        mSlimFaceBar = (SeekBar) findViewById(R.id.beauty_thinface_seekbar);
-        mShortenFaceBar = (SeekBar) findViewById(R.id.beauty_shortenface_seekbar);
-        mBigEyeBar = (SeekBar) findViewById(R.id.beauty_bigeye_seekbar);
-        mCheekpink = (TextView) findViewById(R.id.cheekpink);
-        mWhite = (TextView) findViewById(R.id.white);
-        mSkin = (TextView) findViewById(R.id.skin);
-        mRuddy = (TextView) findViewById(R.id.ruddy);
-        mSlimFace = (TextView) findViewById(R.id.thinface);
-        mShortenFace = (TextView) findViewById(R.id.shortenface);
-        mBigEye = (TextView) findViewById(R.id.bigeye);
-        mWaterLinear = (LinearLayout) findViewById(R.id.water_linear);
         mTargetRate.setHint(String.valueOf(AlivcLivePushConstants.BITRATE_540P_RESOLUTION_FIRST.DEFAULT_VALUE_INT_TARGET_BITRATE.getBitrate()));
         mMinRate.setHint(String.valueOf(AlivcLivePushConstants.BITRATE_540P_RESOLUTION_FIRST.DEFAULT_VALUE_INT_MIN_BITRATE.getBitrate()));
         mInitRate.setHint(String.valueOf(AlivcLivePushConstants.BITRATE_540P_RESOLUTION_FIRST.DEFAULT_VALUE_INT_TARGET_BITRATE.getBitrate()));
         SharedPreferenceUtils.setHintTargetBit(getApplicationContext(), AlivcLivePushConstants.BITRATE_540P_RESOLUTION_FIRST.DEFAULT_VALUE_INT_TARGET_BITRATE.getBitrate());
         SharedPreferenceUtils.setHintMinBit(getApplicationContext(), AlivcLivePushConstants.BITRATE_540P_RESOLUTION_FIRST.DEFAULT_VALUE_INT_MIN_BITRATE.getBitrate());
         turnOnBitRateFps(false);
+        mTabArgsLayout =  (RelativeLayout) findViewById(R.id.tab_args_layout);
+        mTabActionLayout=  (RelativeLayout) findViewById(R.id.tab_action_layout);
+        mTabArgsView =  (View) findViewById(R.id.tab_args_view);
+        mTabActionView =  (View) findViewById(R.id.tab_action_view);
+        mTabArgsContentLayout = (LinearLayout) findViewById(R.id.push_args_setting);
+        mTabActionContentLayout = (LinearLayout) findViewById(R.id.push_function_setting);
+        mAdvanceLayout = (LinearLayout) findViewById(R.id.advance_layout);
+
+        String initUrl = FastTestPushOrPlayerData.getTestPushUrl();
+        if (!initUrl.isEmpty()) {
+            mUrl.setText(initUrl);
+        }
     }
 
     private void setClick() {
         mPublish.setOnClickListener(onClickListener);
         mWaterPosition.setOnClickListener(onClickListener);
+        mTabArgsLayout.setOnClickListener(onClickListener);
+        mTabActionLayout.setOnClickListener(onClickListener);
         mWaterMark.setOnCheckedChangeListener(onCheckedChangeListener);
         mPushMirror.setOnCheckedChangeListener(onCheckedChangeListener);
         mPreviewMirror.setOnCheckedChangeListener(onCheckedChangeListener);
@@ -330,39 +322,26 @@ public class PushConfigActivity extends AppCompatActivity {
         mVideoOnly.setOnCheckedChangeListener(onCheckedChangeListener);
         mAutoFocus.setOnCheckedChangeListener(onCheckedChangeListener);
         mBeautyOn.setOnCheckedChangeListener(onCheckedChangeListener);
+        mAdvanceConfig.setOnCheckedChangeListener(onCheckedChangeListener);
         mResolution.setOnSeekBarChangeListener(onSeekBarChangeListener);
-        mResolution.setProgress(100);
         mAudioRate.setOnSeekBarChangeListener(onSeekBarChangeListener);
         mExtern.setOnCheckedChangeListener(onCheckedChangeListener);
         mFps.setOnSeekBarChangeListener(onSeekBarChangeListener);
-        mFps.setProgress(100);
         mMinFps.setOnSeekBarChangeListener(onSeekBarChangeListener);
-        mMinFps.setProgress(100);
         mAsync.setOnCheckedChangeListener(onCheckedChangeListener);
-        mFlash.setOnCheckedChangeListener(onCheckedChangeListener);
         mLog.setOnCheckedChangeListener(onCheckedChangeListener);
         mBitrate.setOnCheckedChangeListener(onCheckedChangeListener);
         mVariableResolution.setOnCheckedChangeListener(onCheckedChangeListener);
-        //mExternMix.setOnCheckedChangeListener(onCheckedChangeListener);
         mPauseImage.setOnCheckedChangeListener(onCheckedChangeListener);
         mNetworkImage.setOnCheckedChangeListener(onCheckedChangeListener);
         mQr.setOnClickListener(onClickListener);
-        mCopy.setOnClickListener(onClickListener);
         mBack.setOnClickListener(onClickListener);
         mAudioRadio.setOnCheckedChangeListener(mAudioListener);
         mQualityMode.setOnCheckedChangeListener(mQualityListener);
         mGop.setOnCheckedChangeListener(mGopListener);
         mOrientation.setOnCheckedChangeListener(mOrientationListener);
         mDisplayMode.setOnCheckedChangeListener(mDisplayModeListener);
-        mBeautyLevel.setOnCheckedChangeListener(mBeautyLevelListener);
         mAudioProfiles.setOnCheckedChangeListener(mAudioProfileListener);
-        mCheekPinkBar.setOnSeekBarChangeListener(onSeekBarChangeListener);
-        mWhiteBar.setOnSeekBarChangeListener(onSeekBarChangeListener);
-        mSkinBar.setOnSeekBarChangeListener(onSeekBarChangeListener);
-        mRuddyBar.setOnSeekBarChangeListener(onSeekBarChangeListener);
-        mSlimFaceBar.setOnSeekBarChangeListener(onSeekBarChangeListener);
-        mShortenFaceBar.setOnSeekBarChangeListener(onSeekBarChangeListener);
-        mBigEyeBar.setOnSeekBarChangeListener(onSeekBarChangeListener);
     }
 
     private View.OnClickListener onClickListener = new View.OnClickListener() {
@@ -371,11 +350,15 @@ public class PushConfigActivity extends AppCompatActivity {
             int id = view.getId();
             switch (id) {
                 case R.id.beginPublish:
-                    //
                     if(getPushConfig() != null) {
-                        String roomId = mUrl.getText().toString().trim();
-                        String url = "请输入推流地址-" + roomId;
-                        LivePushActivity.startActivity(PushConfigActivity.this, mAlivcLivePushConfig, url, mAsyncValue, mAudioOnlyPush, mVideoOnlyPush, mOrientationEnum, mCameraId, isFlash, mAuthTimeStr, mPrivacyKeyStr, mMixStream, mAlivcLivePushConfig.isExternMainStream());
+                        if(mUrl.getText().toString().contains("rtmp://")||mUrl.getText().toString().contains("artc://")) {
+                            mAlivcLivePushConfig.setFps(FPS_30);
+                            mAlivcLivePushConfig.setMinFps(FPS_25);
+                            mAlivcLivePushConfig.setQualityMode(AlivcQualityModeEnum.QM_CUSTOM);
+                            LivePushActivity.startActivity(PushConfigActivity.this, mAlivcLivePushConfig, mUrl.getText().toString(), mAsyncValue, mAudioOnlyPush, mVideoOnlyPush, mOrientationEnum, mCameraId, isFlash, mAuthTimeStr, mPrivacyKeyStr, mMixStream, mAlivcLivePushConfig.isExternMainStream(), mBeautyOn.isChecked(), mFpsConfig);
+                        }else{
+                            Toast.makeText(PushConfigActivity.this, "url format unsupported", Toast.LENGTH_LONG).show();
+                        }
                     }
                     break;
                 case R.id.qr_code:
@@ -394,17 +377,19 @@ public class PushConfigActivity extends AppCompatActivity {
                     break;
                 case R.id.iv_back:
                     finish();
-                case R.id.copy_paste:
-                    if(cm != null) {
-                        if(mUrl.getText().toString() != null && mUrl.getText().toString().startsWith("rtmp://push-demo-rtmp.aliyunlive.com/test/stream")) {
-                            ClipData mClipData = ClipData.newPlainText("Label", "rtmp://push-demo.aliyunlive.com/test/stream"+mUrl.getText().toString().substring(48,mUrl.getText().length()));
-                            cm.setPrimaryClip(mClipData);
-                            Toast.makeText(getApplicationContext(),R.string.promt_copy_url, Toast.LENGTH_LONG).show();
-                        } else {
-                            Toast.makeText(getApplicationContext(),R.string.promt_copy_customized_url, Toast.LENGTH_LONG).show();
-                        }
-                    }
-                    break;    
+                    break;
+                case R.id.tab_args_layout:
+                    mTabArgsView.setVisibility(View.VISIBLE);
+                    mTabActionView.setVisibility(View.INVISIBLE);
+                    mTabArgsContentLayout.setVisibility(View.VISIBLE);
+                    mTabActionContentLayout.setVisibility(View.GONE);
+                    break;
+                case R.id.tab_action_layout:
+                    mTabActionView.setVisibility(View.VISIBLE);
+                    mTabArgsView.setVisibility(View.INVISIBLE);
+                    mTabArgsContentLayout.setVisibility(View.GONE);
+                    mTabActionContentLayout.setVisibility(View.VISIBLE);
+                    break;
                 default:
                     break;
             }
@@ -442,14 +427,16 @@ public class PushConfigActivity extends AppCompatActivity {
             } else if(id == R.id.autofocus_switch) {
                 mAlivcLivePushConfig.setAutoFocus(isChecked);
                 SharedPreferenceUtils.setAutofocus(getApplicationContext(), isChecked);
+            } else if(id == R.id.advance_config) {
+               if(isChecked) {
+                   mAdvanceLayout.setVisibility(View.VISIBLE);
+               }else{
+                   mAdvanceLayout.setVisibility(View.GONE);
+               }
             } else if(id == R.id.beautyOn_switch) {
-                mAlivcLivePushConfig.setBeautyOn(isChecked);
                 SharedPreferenceUtils.setBeautyOn(getApplicationContext(), isChecked);
-            } else if(id == R.id.async_switch) {
+            }else if(id == R.id.async_switch) {
                 mAsyncValue = isChecked;
-            } else if(id == R.id.flash_switch) {
-                mAlivcLivePushConfig.setFlash(isChecked);
-                isFlash = isChecked;
             } else if(id == R.id.log_switch) {
                 if(isChecked) {
                     LogcatHelper.getInstance(getApplicationContext()).start();
@@ -463,7 +450,7 @@ public class PushConfigActivity extends AppCompatActivity {
             {
                 mAlivcLivePushConfig.setEnableAutoResolution(isChecked);
             } else if(id == R.id.extern_video) {
-                mAlivcLivePushConfig.setExternMainStream(isChecked, AlivcImageFormat.IMAGE_FORMAT_YUVNV21, AlivcSoundFormat.SOUND_FORMAT_S16);
+                mAlivcLivePushConfig.setExternMainStream(isChecked, AlivcImageFormat.IMAGE_FORMAT_YUVNV12, AlivcSoundFormat.SOUND_FORMAT_S16);
                 mAlivcLivePushConfig.setAudioChannels(AlivcAudioChannelEnum.AUDIO_CHANNEL_ONE);
                 mAlivcLivePushConfig.setAudioSamepleRate(AlivcAudioSampleRateEnum.AUDIO_SAMPLE_RATE_44100);
             } else if(id == R.id.pause_image) {
@@ -472,9 +459,9 @@ public class PushConfigActivity extends AppCompatActivity {
                 } else {
                     if(mAlivcLivePushConfig.getPreviewOrientation() == AlivcPreviewOrientationEnum.ORIENTATION_LANDSCAPE_HOME_LEFT.getOrientation() || mAlivcLivePushConfig.getPreviewOrientation() == AlivcPreviewOrientationEnum.ORIENTATION_LANDSCAPE_HOME_RIGHT.getOrientation())
                     {
-                        mAlivcLivePushConfig.setPausePushImage(Environment.getExternalStorageDirectory().getPath() + File.separator + "alivc_resource/background_push_land.png");
+                        mAlivcLivePushConfig.setPausePushImage(getFilesDir().getPath() + File.separator + "alivc_resource/background_push_land.png");
                     } else {
-                        mAlivcLivePushConfig.setPausePushImage(Environment.getExternalStorageDirectory().getPath() + File.separator + "alivc_resource/background_push.png");
+                        mAlivcLivePushConfig.setPausePushImage(getFilesDir().getPath() + File.separator + "alivc_resource/background_push.png");
                     }
                 }
             } else if(id == R.id.network_image) {
@@ -483,9 +470,9 @@ public class PushConfigActivity extends AppCompatActivity {
                 } else {
                     if(mAlivcLivePushConfig.getPreviewOrientation() == AlivcPreviewOrientationEnum.ORIENTATION_LANDSCAPE_HOME_LEFT.getOrientation() || mAlivcLivePushConfig.getPreviewOrientation() == AlivcPreviewOrientationEnum.ORIENTATION_LANDSCAPE_HOME_RIGHT.getOrientation())
                     {
-                        mAlivcLivePushConfig.setNetworkPoorPushImage(Environment.getExternalStorageDirectory().getPath() + File.separator + "alivc_resource/poor_network_land.png");
+                        mAlivcLivePushConfig.setNetworkPoorPushImage(getFilesDir().getPath() + File.separator + "alivc_resource/poor_network_land.png");
                     } else {
-                        mAlivcLivePushConfig.setNetworkPoorPushImage(Environment.getExternalStorageDirectory().getPath() + File.separator + "alivc_resource/poor_network.png");
+                        mAlivcLivePushConfig.setNetworkPoorPushImage(getFilesDir().getPath() + File.separator + "alivc_resource/poor_network.png");
                     }
                 }
             }
@@ -654,100 +641,65 @@ public class PushConfigActivity extends AppCompatActivity {
                     mAudioRateText.setText(getString(R.string.setting_audio_480));
                 }
             }else if (mFps.getId() == seekBarId) {
-                Log.e(TAG, "onProgressChanged: mAlivcLivePushConfig.getQualityMode() " + mAlivcLivePushConfig.getQualityMode());
                 if(!mAlivcLivePushConfig.getQualityMode().equals(AlivcQualityModeEnum.QM_CUSTOM))
                 {
                     mFps.setProgress(83);
                     mAlivcLivePushConfig.setFps(FPS_25);
+                    mFpsConfig = 25;
                     mFpsText.setText(String.valueOf(FPS_25.getFps()));
                     return;
                 }
                 if(progress <= PROGRESS_0){
                     mAlivcLivePushConfig.setFps(FPS_8);
                     mFpsText.setText(String.valueOf(FPS_8.getFps()));
+                    mFpsConfig = 8;
                 }else if(progress > PROGRESS_0 && progress <= PROGRESS_16){
                     mAlivcLivePushConfig.setFps(FPS_10);
                     mFpsText.setText(String.valueOf(FPS_10.getFps()));
+                    mFpsConfig = 10;
                 }else if(progress > PROGRESS_16 && progress <= PROGRESS_33){
                     mAlivcLivePushConfig.setFps(FPS_12);
                     mFpsText.setText(String.valueOf(FPS_12.getFps()));
+                    mFpsConfig = 12;
                 }else if(progress > PROGRESS_33 && progress <= PROGRESS_50){
                     mAlivcLivePushConfig.setFps(FPS_15);
                     mFpsText.setText(String.valueOf(FPS_15.getFps()));
+                    mFpsConfig = 15;
                 }else if(progress > PROGRESS_50 && progress <= PROGRESS_66) {
                     mAlivcLivePushConfig.setFps(FPS_20);
                     mFpsText.setText(String.valueOf(FPS_20.getFps()));
+                    mFpsConfig = 20;
                 }else if(progress > PROGRESS_66 && progress <= PROGRESS_80) {
                     mAlivcLivePushConfig.setFps(FPS_25);
                     mFpsText.setText(String.valueOf(FPS_25.getFps()));
+                    mFpsConfig = 25;
                 }else if(progress > PROGRESS_80) {
                     mAlivcLivePushConfig.setFps(FPS_30);
                     mFpsText.setText(String.valueOf(FPS_30.getFps()));
+                    mFpsConfig = 30;
                 }
             } else if(mMinFps.getId() == seekBarId) {
-                if(progress <= PROGRESS_0){
+                if (progress <= PROGRESS_0) {
                     mAlivcLivePushConfig.setMinFps(FPS_8);
                     mMinFpsText.setText(String.valueOf(FPS_8.getFps()));
-                }else if(progress > PROGRESS_0 && progress <= PROGRESS_16){
+                } else if (progress > PROGRESS_0 && progress <= PROGRESS_16) {
                     mAlivcLivePushConfig.setMinFps(FPS_10);
                     mMinFpsText.setText(String.valueOf(FPS_10.getFps()));
-                }else if(progress > PROGRESS_16 && progress <= PROGRESS_33){
+                } else if (progress > PROGRESS_16 && progress <= PROGRESS_33) {
                     mAlivcLivePushConfig.setMinFps(FPS_12);
                     mMinFpsText.setText(String.valueOf(FPS_12.getFps()));
-                }else if(progress > PROGRESS_33 && progress <= PROGRESS_50){
+                } else if (progress > PROGRESS_33 && progress <= PROGRESS_50) {
                     mAlivcLivePushConfig.setMinFps(FPS_15);
                     mMinFpsText.setText(String.valueOf(FPS_15.getFps()));
-                }else if(progress > PROGRESS_50 && progress <= PROGRESS_66) {
+                } else if (progress > PROGRESS_50 && progress <= PROGRESS_66) {
                     mAlivcLivePushConfig.setMinFps(FPS_20);
                     mMinFpsText.setText(String.valueOf(FPS_20.getFps()));
-                }else if(progress > PROGRESS_66 && progress <= PROGRESS_80) {
+                } else if (progress > PROGRESS_66 && progress <= PROGRESS_80) {
                     mAlivcLivePushConfig.setMinFps(FPS_25);
                     mMinFpsText.setText(String.valueOf(FPS_25.getFps()));
-                }else if(progress > PROGRESS_80) {
+                } else if (progress > PROGRESS_80) {
                     mAlivcLivePushConfig.setMinFps(FPS_30);
                     mMinFpsText.setText(String.valueOf(FPS_30.getFps()));
-                }
-            } else if(mCheekPinkBar.getId() == seekBarId) {
-                mCheekpink.setText(String.valueOf(progress));
-                if(mAlivcLivePushConfig != null) {
-                    mAlivcLivePushConfig.setBeautyCheekPink(progress);
-                    SharedPreferenceUtils.setCheekPink(getApplicationContext(), progress);
-                }
-            } else if(mWhiteBar.getId() == seekBarId) {
-                mWhite.setText(String.valueOf(progress));
-                if(mAlivcLivePushConfig != null) {
-                    mAlivcLivePushConfig.setBeautyWhite(progress);
-                    SharedPreferenceUtils.setWhiteValue(getApplicationContext(), progress);
-                }
-            } else if(mSkinBar.getId() == seekBarId) {
-                mSkin.setText(String.valueOf(progress));
-                if(mAlivcLivePushConfig != null) {
-                    mAlivcLivePushConfig.setBeautyBuffing(progress);
-                    SharedPreferenceUtils.setBuffing(getApplicationContext(), progress);
-                }
-            } else if (mRuddyBar.getId() == seekBarId) {
-                mRuddy.setText(String.valueOf(progress));
-                if(mAlivcLivePushConfig != null) {
-                    mAlivcLivePushConfig.setBeautyRuddy(progress);
-                    SharedPreferenceUtils.setRuddy(getApplicationContext(), progress);
-                }
-            } else if(mSlimFaceBar.getId() == seekBarId) {
-                mSlimFace.setText(String.valueOf(progress));
-                if(mAlivcLivePushConfig != null) {
-                    mAlivcLivePushConfig.setBeautyThinFace(progress);
-                    SharedPreferenceUtils.setSlimFace(getApplicationContext(), progress);
-                }
-            } else if(mShortenFaceBar.getId() == seekBarId) {
-                mShortenFace.setText(String.valueOf(progress));
-                if(mAlivcLivePushConfig != null) {
-                    mAlivcLivePushConfig.setBeautyShortenFace(progress);
-                    SharedPreferenceUtils.setShortenFace(getApplicationContext(), progress);
-                }
-            } else if(mBigEyeBar.getId() == seekBarId) {
-                mBigEye.setText(String.valueOf(progress));
-                if(mAlivcLivePushConfig != null) {
-                    mAlivcLivePushConfig.setBeautyBigEye(progress);
-                    SharedPreferenceUtils.setBigEye(getApplicationContext(), progress);
                 }
             }
         }
@@ -808,6 +760,16 @@ public class PushConfigActivity extends AppCompatActivity {
 
             switch (i) {
                 case R.id.resolution_first:
+                    if (AlivcQualityModeEnum.QM_CUSTOM.equals(mAlivcLivePushConfig.getQualityMode())) {
+                        mCustomTargetBitrateValue = mTargetRate.getText();
+                        mCustomMinBitrateValue = mMinRate.getText();
+                        mCustomInitBitrateValue = mInitRate.getText();
+                        mCustomAudioBitrateValue = mAudioBitRate.getText();
+                        mTargetRate.setText("");
+                        mMinRate.setText("");
+                        mInitRate.setText("");
+                        mAudioBitRate.setText("");
+                    }
                     if(mAlivcLivePushConfig != null) {
                         mAlivcLivePushConfig.setQualityMode(AlivcQualityModeEnum.QM_RESOLUTION_FIRST);
                         if(mDefinition.equals(AlivcResolutionEnum.RESOLUTION_180P))
@@ -857,6 +819,16 @@ public class PushConfigActivity extends AppCompatActivity {
                     turnOnBitRateFps(false);
                     break;
                 case R.id.fluency_first:
+                    if (AlivcQualityModeEnum.QM_CUSTOM.equals(mAlivcLivePushConfig.getQualityMode())) {
+                        mCustomTargetBitrateValue = mTargetRate.getText();
+                        mCustomMinBitrateValue = mMinRate.getText();
+                        mCustomInitBitrateValue = mInitRate.getText();
+                        mCustomAudioBitrateValue = mAudioBitRate.getText();
+                        mTargetRate.setText("");
+                        mMinRate.setText("");
+                        mInitRate.setText("");
+                        mAudioBitRate.setText("");
+                    }
                     if(mAlivcLivePushConfig != null) {
                         mAlivcLivePushConfig.setQualityMode(AlivcQualityModeEnum.QM_FLUENCY_FIRST);
                         if(mDefinition.equals(AlivcResolutionEnum.RESOLUTION_180P))
@@ -906,6 +878,10 @@ public class PushConfigActivity extends AppCompatActivity {
                     turnOnBitRateFps(false);
                     break;
                 case R.id.custom_mode:
+                    mTargetRate.setText(mCustomTargetBitrateValue);
+                    mMinRate.setText(mCustomMinBitrateValue);
+                    mInitRate.setText(mCustomInitBitrateValue);
+                    mAudioBitRate.setText(mCustomAudioBitrateValue);
                     if(mAlivcLivePushConfig != null) {
                         mAlivcLivePushConfig.setQualityMode(AlivcQualityModeEnum.QM_CUSTOM);
                         if(mDefinition.equals(AlivcResolutionEnum.RESOLUTION_180P))
@@ -1026,13 +1002,13 @@ public class PushConfigActivity extends AppCompatActivity {
                     if(mAlivcLivePushConfig != null) {
                         mAlivcLivePushConfig.setPreviewOrientation(ORIENTATION_PORTRAIT);
                         mOrientationEnum = ORIENTATION_PORTRAIT;
-                        if(mAlivcLivePushConfig.getPausePushImage() != null && !mAlivcLivePushConfig.getPausePushImage().equals(""))
+                        if(mAlivcLivePushConfig.getPausePushImage() == null || mAlivcLivePushConfig.getPausePushImage().equals(""))
                         {
-                            mAlivcLivePushConfig.setPausePushImage(Environment.getExternalStorageDirectory().getPath() + File.separator + "alivc_resource/background_push.png");
+                            mAlivcLivePushConfig.setPausePushImage(getFilesDir().getPath() + File.separator + "alivc_resource/background_push.png");
                         }
                         if(mAlivcLivePushConfig.getNetworkPoorPushImage() != null && !mAlivcLivePushConfig.getNetworkPoorPushImage().equals(""))
                         {
-                            mAlivcLivePushConfig.setNetworkPoorPushImage(Environment.getExternalStorageDirectory().getPath() + File.separator + "alivc_resource/poor_network.png");
+                            mAlivcLivePushConfig.setNetworkPoorPushImage(getFilesDir().getPath() + File.separator + "alivc_resource/poor_network.png");
                         }
                     }
                     break;
@@ -1040,13 +1016,13 @@ public class PushConfigActivity extends AppCompatActivity {
                     if(mAlivcLivePushConfig != null) {
                         mAlivcLivePushConfig.setPreviewOrientation(ORIENTATION_LANDSCAPE_HOME_LEFT);
                         mOrientationEnum = ORIENTATION_LANDSCAPE_HOME_LEFT;
-                        if(mAlivcLivePushConfig.getPausePushImage() != null && !mAlivcLivePushConfig.getPausePushImage().equals(""))
+                        if(mAlivcLivePushConfig.getPausePushImage() == null || mAlivcLivePushConfig.getPausePushImage().equals(""))
                         {
-                            mAlivcLivePushConfig.setPausePushImage(Environment.getExternalStorageDirectory().getPath() + File.separator + "alivc_resource/background_push_land.png");
+                            mAlivcLivePushConfig.setPausePushImage(getFilesDir().getPath() + File.separator + "alivc_resource/background_push.png");
                         }
                         if(mAlivcLivePushConfig.getNetworkPoorPushImage() != null && !mAlivcLivePushConfig.getNetworkPoorPushImage().equals(""))
                         {
-                            mAlivcLivePushConfig.setNetworkPoorPushImage(Environment.getExternalStorageDirectory().getPath() + File.separator + "alivc_resource/poor_network_land.png");
+                            mAlivcLivePushConfig.setNetworkPoorPushImage(getFilesDir().getPath() + File.separator + "alivc_resource/poor_network.png");
                         }
                     }
                     break;
@@ -1054,13 +1030,13 @@ public class PushConfigActivity extends AppCompatActivity {
                     if(mAlivcLivePushConfig != null) {
                         mAlivcLivePushConfig.setPreviewOrientation(ORIENTATION_LANDSCAPE_HOME_RIGHT);
                         mOrientationEnum = ORIENTATION_LANDSCAPE_HOME_RIGHT;
-                        if(mAlivcLivePushConfig.getPausePushImage() != null && !mAlivcLivePushConfig.getPausePushImage().equals(""))
+                        if(mAlivcLivePushConfig.getPausePushImage() == null || mAlivcLivePushConfig.getPausePushImage().equals(""))
                         {
-                            mAlivcLivePushConfig.setPausePushImage(Environment.getExternalStorageDirectory().getPath() + File.separator + "alivc_resource/background_push_land.png");
+                            mAlivcLivePushConfig.setPausePushImage(getFilesDir().getPath() + File.separator + "alivc_resource/background_push.png");
                         }
                         if(mAlivcLivePushConfig.getNetworkPoorPushImage() != null && !mAlivcLivePushConfig.getNetworkPoorPushImage().equals(""))
                         {
-                            mAlivcLivePushConfig.setNetworkPoorPushImage(Environment.getExternalStorageDirectory().getPath() + File.separator + "alivc_resource/poor_network_land.png");
+                            mAlivcLivePushConfig.setNetworkPoorPushImage(getFilesDir().getPath() + File.separator + "alivc_resource/poor_network.png");
                         }
                     }
                     break;
@@ -1105,27 +1081,6 @@ public class PushConfigActivity extends AppCompatActivity {
         }
     };
 
-    private RadioGroup.OnCheckedChangeListener mBeautyLevelListener = new RadioGroup.OnCheckedChangeListener() {
-        @Override
-        public void onCheckedChanged(RadioGroup radioGroup, int i) {
-
-            switch (i) {
-                case R.id.beauty_normal:
-                    if(mAlivcLivePushConfig != null) {
-                        mAlivcLivePushConfig.setBeautyLevel(AlivcBeautyLevelEnum.BEAUTY_Normal);
-                    }
-                    break;
-                case R.id.beauty_professional:
-                    if(mAlivcLivePushConfig != null) {
-                        mAlivcLivePushConfig.setBeautyLevel(AlivcBeautyLevelEnum.BEAUTY_Professional);
-                    }
-                    break;
-                default:
-                    break;
-            }
-        }
-    };
-
     private RadioGroup.OnCheckedChangeListener mAudioProfileListener = new RadioGroup.OnCheckedChangeListener() {
         @Override
         public void onCheckedChanged(RadioGroup radioGroup, int i) {
@@ -1160,14 +1115,6 @@ public class PushConfigActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        mWhite.setText(String.valueOf(SharedPreferenceUtils.getWhiteValue(getApplicationContext())));
-        mWhiteBar.setProgress(SharedPreferenceUtils.getWhiteValue(getApplicationContext()));
-        mSkin.setText(String.valueOf(SharedPreferenceUtils.getBuffing(getApplicationContext())));
-        mSkinBar.setProgress(SharedPreferenceUtils.getBuffing(getApplicationContext()));
-        mRuddy.setText(String.valueOf(SharedPreferenceUtils.getRuddy(getApplicationContext())));
-        mRuddyBar.setProgress(SharedPreferenceUtils.getRuddy(getApplicationContext()));
-        mCheekpink.setText(String.valueOf(SharedPreferenceUtils.getCheekpink(getApplicationContext())));
-        mCheekPinkBar.setProgress(SharedPreferenceUtils.getCheekpink(getApplicationContext()));
         mPushMirror.setChecked(SharedPreferenceUtils.isPushMirror(getApplicationContext()));
         mPreviewMirror.setChecked(SharedPreferenceUtils.isPreviewMirror(getApplicationContext()));
         mAutoFocus.setChecked(SharedPreferenceUtils.isAutoFocus(getApplicationContext()));
@@ -1264,8 +1211,13 @@ public class PushConfigActivity extends AppCompatActivity {
         }
 
         if(mWaterMark.isChecked()) {
+            mAlivcLivePushConfig.clearWaterMark();
             for(int i = 0; i < waterMarkInfos.size(); i++) {
                 mAlivcLivePushConfig.addWaterMark(waterMarkInfos.get(i).mWaterMarkPath, waterMarkInfos.get(i).mWaterMarkCoordX, waterMarkInfos.get(i).mWaterMarkCoordY, waterMarkInfos.get(i).mWaterMarkWidth);
+            }
+        }else{
+            for(WaterMarkInfo info : waterMarkInfos){
+                mAlivcLivePushConfig.removeWaterMark(info.mWaterMarkPath);
             }
         }
 
@@ -1311,10 +1263,6 @@ public class PushConfigActivity extends AppCompatActivity {
                 }
                 break;
             case REQ_CODE_PUSH: {
-                if(mWaterLinear != null && mWaterMark.isChecked()) {
-                    mWaterMark.setEnabled(false);
-                    mWaterPosition.setEnabled(false);
-                }
                 if(mTargetRate != null && mMinRate != null) {
 
                     if(!mTargetRate.getText().toString().isEmpty() || Integer.valueOf(mTargetRate.getHint().toString()) != SharedPreferenceUtils.getTargetBit(getApplicationContext())) {
@@ -1440,6 +1388,11 @@ public class PushConfigActivity extends AppCompatActivity {
 
             @Override
             public void onAdjustFps(AlivcLivePusher pusher, int curFps, int targetFps) {
+
+            }
+
+            @Override
+            public void onPushStatistics(AlivcLivePusher alivcLivePusher, AlivcLivePushStatsInfo alivcLivePushStatsInfo) {
 
             }
         });

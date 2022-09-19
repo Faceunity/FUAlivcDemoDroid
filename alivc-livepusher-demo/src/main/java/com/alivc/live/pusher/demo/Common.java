@@ -3,10 +3,9 @@ package com.alivc.live.pusher.demo;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.res.AssetManager;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
-import android.support.v7.app.AlertDialog;
+import androidx.appcompat.app.AlertDialog;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -20,12 +19,19 @@ import java.util.TimeZone;
 
 public class Common {
 
-    private static String SD_DIR = Environment.getExternalStorageDirectory().getPath() + File.separator;
+    private static String SD_DIR = "";
     private static String RESOURCE_DIR = "alivc_resource";
     private static String filename = RESOURCE_DIR + File.separator + "watermark.png";
-    public static final String waterMark = SD_DIR + filename;
+    public  static String waterMark = "";
 
     public static void copyAsset(Context context) {
+        if(context == null) {
+            return;
+        }
+        if(SD_DIR == null || SD_DIR.isEmpty()){
+            SD_DIR = context.getFilesDir().getPath() + File.separator;
+            waterMark = SD_DIR + filename;
+        }
         if(new File(SD_DIR + filename).exists()) {
             return;
         }
@@ -82,6 +88,10 @@ public class Common {
     }
 
     public static void copyAll(Context cxt) {
+        if(SD_DIR == null || SD_DIR.isEmpty()){
+            SD_DIR = cxt.getFilesDir().getPath() + File.separator;
+            waterMark = SD_DIR + filename;
+        }
         File dir = new File(Common.SD_DIR);
         copySelf(cxt,"alivc_resource");
         dir.mkdirs();

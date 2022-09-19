@@ -14,6 +14,6 @@
         android:startColor="@color/thumbGradient" />
 
     <stroke android:width="1dp"
-        android:color="@color/thumbOnColor"/>
+        android:color="@color/switch_bar_on_color"/>
 
 </shape>

@@ -6,14 +6,6 @@ import android.content.SharedPreferences;
 import com.alivc.live.pusher.AlivcPreviewDisplayMode;
 
 import static com.alivc.live.pusher.AlivcLivePushConstants.DEFAULT_VALUE_AUTO_FOCUS;
-import static com.alivc.live.pusher.AlivcLivePushConstants.DEFAULT_VALUE_INT_BEAUTY_BITEYE;
-import static com.alivc.live.pusher.AlivcLivePushConstants.DEFAULT_VALUE_INT_BEAUTY_BRIGHTNESS;
-import static com.alivc.live.pusher.AlivcLivePushConstants.DEFAULT_VALUE_INT_BEAUTY_BUFFING;
-import static com.alivc.live.pusher.AlivcLivePushConstants.DEFAULT_VALUE_INT_BEAUTY_RUDDY;
-import static com.alivc.live.pusher.AlivcLivePushConstants.DEFAULT_VALUE_INT_BEAUTY_CHEEKPINK;
-import static com.alivc.live.pusher.AlivcLivePushConstants.DEFAULT_VALUE_INT_BEAUTY_SHORTENFACE;
-import static com.alivc.live.pusher.AlivcLivePushConstants.DEFAULT_VALUE_INT_BEAUTY_SLIMFACE;
-import static com.alivc.live.pusher.AlivcLivePushConstants.DEFAULT_VALUE_INT_BEAUTY_WHITE;
 import static com.alivc.live.pusher.AlivcLivePushConstants.DEFAULT_VALUE_PREVIEW_MIRROR;
 import static com.alivc.live.pusher.AlivcLivePushConstants.DEFAULT_VALUE_PUSH_MIRROR;
 
@@ -46,111 +38,7 @@ public class SharedPreferenceUtils {
         editor.commit();
     }
 
-    public static int getWhiteValue(Context context) {
 
-        SharedPreferences sharedPreferences = context.getSharedPreferences(SHAREDPRE_FILE,
-                Activity.MODE_PRIVATE);
-        int white = sharedPreferences.getInt(WHITE, DEFAULT_VALUE_INT_BEAUTY_WHITE);
-        return white;
-    }
-
-    public static void setBuffing(Context context, int buffing) {
-        SharedPreferences mySharedPreferences = context.getSharedPreferences(SHAREDPRE_FILE, Activity.MODE_PRIVATE);
-        SharedPreferences.Editor editor = mySharedPreferences.edit();
-        editor.putInt(BUFFING, buffing);
-        editor.commit();
-    }
-
-    public static int getBuffing(Context context) {
-        SharedPreferences sharedPreferences = context.getSharedPreferences(SHAREDPRE_FILE,
-                Activity.MODE_PRIVATE);
-        int buffing = sharedPreferences.getInt(BUFFING, DEFAULT_VALUE_INT_BEAUTY_BUFFING);
-        return buffing;
-    }
-
-    public static void setRuddy(Context context, int ruddy) {
-        SharedPreferences mySharedPreferences = context.getSharedPreferences(SHAREDPRE_FILE, Activity.MODE_PRIVATE);
-        SharedPreferences.Editor editor = mySharedPreferences.edit();
-        editor.putInt(RUDDY, ruddy);
-        editor.commit();
-    }
-
-    public static int getRuddy(Context context) {
-        SharedPreferences sharedPreferences = context.getSharedPreferences(SHAREDPRE_FILE,
-                Activity.MODE_PRIVATE);
-        int ruddy = sharedPreferences.getInt(RUDDY, DEFAULT_VALUE_INT_BEAUTY_RUDDY);
-        return ruddy;
-    }
-
-    public static void setBrightness(Context context, int brightness) {
-        SharedPreferences mySharedPreferences = context.getSharedPreferences(SHAREDPRE_FILE, Activity.MODE_PRIVATE);
-        SharedPreferences.Editor editor = mySharedPreferences.edit();
-        editor.putInt(BRIGHTNESS, brightness);
-        editor.commit();
-    }
-
-    public static int getBrightness(Context context) {
-        SharedPreferences sharedPreferences = context.getSharedPreferences(SHAREDPRE_FILE,
-                Activity.MODE_PRIVATE);
-        int brightness = sharedPreferences.getInt(BRIGHTNESS, DEFAULT_VALUE_INT_BEAUTY_BRIGHTNESS);
-        return brightness;
-    }
-
-    public static void setCheekPink(Context context, int cheekpink) {
-        SharedPreferences mySharedPreferences = context.getSharedPreferences(SHAREDPRE_FILE, Activity.MODE_PRIVATE);
-        SharedPreferences.Editor editor = mySharedPreferences.edit();
-        editor.putInt(CHEEKPINK, cheekpink);
-        editor.commit();
-    }
-
-    public static int getCheekpink(Context context) {
-        SharedPreferences sharedPreferences = context.getSharedPreferences(SHAREDPRE_FILE,
-                Activity.MODE_PRIVATE);
-        int cheekpink = sharedPreferences.getInt(CHEEKPINK, DEFAULT_VALUE_INT_BEAUTY_CHEEKPINK);
-        return cheekpink;
-    }
-
-    public static void setSlimFace(Context context, int slimface) {
-        SharedPreferences mySharedPreferences = context.getSharedPreferences(SHAREDPRE_FILE, Activity.MODE_PRIVATE);
-        SharedPreferences.Editor editor = mySharedPreferences.edit();
-        editor.putInt(SLIMFACE, slimface);
-        editor.commit();
-    }
-
-    public static int getSlimFace(Context context) {
-        SharedPreferences sharedPreferences = context.getSharedPreferences(SHAREDPRE_FILE,
-                Activity.MODE_PRIVATE);
-        int slimface = sharedPreferences.getInt(SLIMFACE, DEFAULT_VALUE_INT_BEAUTY_SLIMFACE);
-        return slimface;
-    }
-
-    public static void setShortenFace(Context context, int shortenface) {
-        SharedPreferences mySharedPreferences = context.getSharedPreferences(SHAREDPRE_FILE, Activity.MODE_PRIVATE);
-        SharedPreferences.Editor editor = mySharedPreferences.edit();
-        editor.putInt(SHORTENFACE, shortenface);
-        editor.commit();
-    }
-
-    public static int getShortenFace(Context context) {
-        SharedPreferences sharedPreferences = context.getSharedPreferences(SHAREDPRE_FILE,
-                Activity.MODE_PRIVATE);
-        int shortenface = sharedPreferences.getInt(SHORTENFACE, DEFAULT_VALUE_INT_BEAUTY_SHORTENFACE);
-        return shortenface;
-    }
-
-    public static void setBigEye(Context context, int saturation) {
-        SharedPreferences mySharedPreferences = context.getSharedPreferences(SHAREDPRE_FILE, Activity.MODE_PRIVATE);
-        SharedPreferences.Editor editor = mySharedPreferences.edit();
-        editor.putInt(BIGEYE, saturation);
-        editor.commit();
-    }
-
-    public static int getBigEye(Context context) {
-        SharedPreferences sharedPreferences = context.getSharedPreferences(SHAREDPRE_FILE,
-                Activity.MODE_PRIVATE);
-        int bigeye = sharedPreferences.getInt(BIGEYE, DEFAULT_VALUE_INT_BEAUTY_BITEYE);
-        return bigeye;
-    }
 
     public static void setPreviewMirror(Context context, boolean previewMirror) {
         SharedPreferences mySharedPreferences = context.getSharedPreferences(SHAREDPRE_FILE, Activity.MODE_PRIVATE);

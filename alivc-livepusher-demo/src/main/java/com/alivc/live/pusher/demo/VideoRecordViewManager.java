@@ -34,7 +34,11 @@ public class VideoRecordViewManager {
             mVideoRecordSmallWindow = new VideoRecordSmallView(context, activity.getTaskId());
             if (mVideoRecordWindowParams == null) {
                 mVideoRecordWindowParams = new LayoutParams();
-                mVideoRecordWindowParams.type = LayoutParams.TYPE_PHONE;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    mVideoRecordWindowParams.type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
+                } else {
+                    mVideoRecordWindowParams.type = WindowManager.LayoutParams.TYPE_PHONE;
+                }
                 mVideoRecordWindowParams.format = PixelFormat.RGBA_8888;
                 mVideoRecordWindowParams.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
                         WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
@@ -88,7 +92,11 @@ public class VideoRecordViewManager {
             mVideoRecordCameraPreviewWindow = new VideoRecordCameraPreviewView(activity, context);
             if (mVideoRecordCameraWindowParams == null) {
                 mVideoRecordCameraWindowParams = new LayoutParams();
-                mVideoRecordCameraWindowParams.type = LayoutParams.TYPE_PHONE;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    mVideoRecordCameraWindowParams.type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
+                } else {
+                    mVideoRecordCameraWindowParams.type = WindowManager.LayoutParams.TYPE_PHONE;
+                }
                 mVideoRecordCameraWindowParams.format = PixelFormat.RGBA_8888;
                 mVideoRecordCameraWindowParams.flags = LayoutParams.FLAG_NOT_TOUCH_MODAL
                         | LayoutParams.FLAG_NOT_FOCUSABLE;

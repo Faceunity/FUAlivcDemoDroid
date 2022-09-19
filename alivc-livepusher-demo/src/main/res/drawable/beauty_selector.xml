@@ -2,5 +2,5 @@
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item android:state_selected="true" android:drawable="@mipmap/beauty_on"/>
-    <item android:state_selected="false" android:drawable="@mipmap/beauty_off"/>
+    <item android:state_selected="false" android:drawable="@mipmap/beauty_on"/>
 </selector>

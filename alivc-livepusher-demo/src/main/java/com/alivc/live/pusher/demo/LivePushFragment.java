@@ -4,32 +4,40 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.Bitmap;
 import android.hardware.Camera;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
-import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
-import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.appcompat.app.AlertDialog;
+import androidx.fragment.app.Fragment;
 
 import com.alivc.live.pusher.AlivcLivePushBGMListener;
 import com.alivc.live.pusher.AlivcLivePushError;
 import com.alivc.live.pusher.AlivcLivePushErrorListener;
 import com.alivc.live.pusher.AlivcLivePushInfoListener;
 import com.alivc.live.pusher.AlivcLivePushNetworkListener;
+import com.alivc.live.pusher.AlivcLivePushStatsInfo;
 import com.alivc.live.pusher.AlivcLivePusher;
 import com.alivc.live.pusher.AlivcSnapshotListener;
+import com.alivc.live.pusher.widget.CommonDialog;
+import com.alivc.live.pusher.widget.DataView;
+import com.alivc.live.pusher.widget.TextFormatUtil;
+import com.faceunity.core.enumeration.CameraFacingEnum;
+import com.faceunity.core.enumeration.FUTransformMatrixEnum;
+import com.faceunity.core.utils.CameraUtils;
+import com.faceunity.nama.FURenderer;
 
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
@@ -68,25 +76,24 @@ public class LivePushFragment extends Fragment implements Runnable {
     private static final String PRIVACY_KEY = "privacy_key";
     private static final String MIX_EXTERN = "mix_extern";
     private static final String MIX_MAIN = "mix_main";
+    private static final String BEAUTY_CHECKED = "beauty_checked";
+    private static final String FPS = "fps";
     private final long REFRESH_INTERVAL = 2000;
-
     private ImageView mExit;
-    private ImageView mMusic;
-    private ImageView mFlash;
-    private ImageView mCamera;
-    private ImageView mSnapshot;
-    private ImageView mBeautyButton;
-    private TextView mAnswer;
-    private LinearLayout mTopBar;
+    private TextView mMusic;
+    private TextView mFlash;
+    private TextView mCamera;
+    private TextView mSnapshot;
     private TextView mUrl;
     private TextView mIsPushing;
     private LinearLayout mGuide;
 
-    private Button mPreviewButton;
-    private Button mPushButton;
-    private Button mOperaButton;
-    private Button mMore;
-    private Button mRestartButton;
+    private TextView mPreviewButton;
+    private TextView mPushButton;
+    private TextView mOperaButton;
+    private TextView mMore;
+    private TextView mRestartButton;
+    private TextView mDataButton;
     private AlivcLivePusher mAlivcLivePusher = null;
     private String mPushUrl = null;
     private SurfaceView mSurfaceView = null;
@@ -110,10 +117,8 @@ public class LivePushFragment extends Fragment implements Runnable {
 
     ScheduledExecutorService mExecutorService = new ScheduledThreadPoolExecutor(5,
             new BasicThreadFactory.Builder().namingPattern("example-schedule-pool-%d").daemon(true).build());
-    private boolean videoThreadOn = false;
-    private boolean videoThreadOn2 = false;
-    private boolean videoThreadOn3 = false;
     private boolean audioThreadOn = false;
+    private boolean mIsStartAsnycPushing = false;
 
     private MusicDialog mMusicDialog = null;
 
@@ -122,25 +127,21 @@ public class LivePushFragment extends Fragment implements Runnable {
     private String mTempUrl = null;
     private String mAuthTime = "";
     private String mPrivacyKey = "";
-
+    private TextView mStatusTV;
+    private LinearLayout mActionBar;
     Vector<Integer> mDynamicals = new Vector<>();
+    private boolean isBeautyEnable = true;
+    private DataView mDataView;
+    private int mCurBr;
+    private int mTargetBr;
+    private TextView mCurFpsLayout;
+    private TextView mCurBrLayout;
+    private int mFps;
+    private CommonDialog mDialog;
+    private AlivcLivePushStatsInfo mPushStatsInfo;
+    private int mSkipFrames = 5;
 
-    public interface OnCameraSwitchedListener {
-        /**
-         * call when camera switched
-         *
-         * @param cameraId
-         */
-        void onCameraSwitched(int cameraId);
-    }
-
-    private OnCameraSwitchedListener mOnCameraSwitchedListener;
-
-    public void setOnCameraSwitchedListener(OnCameraSwitchedListener onCameraSwitchedListener) {
-        mOnCameraSwitchedListener = onCameraSwitchedListener;
-    }
-
-    public static LivePushFragment newInstance(String url, boolean async, boolean mAudio, boolean mVideoOnly, int cameraId, boolean isFlash, int mode, String authTime, String privacyKey, boolean mixExtern, boolean mixMain) {
+    public static LivePushFragment newInstance(String url, boolean async, boolean mAudio, boolean mVideoOnly, int cameraId, boolean isFlash, int mode, String authTime, String privacyKey, boolean mixExtern, boolean mixMain, boolean beautyOn, int fps) {
         LivePushFragment livePushFragment = new LivePushFragment();
         Bundle bundle = new Bundle();
         bundle.putString(URL_KEY, url);
@@ -154,12 +155,14 @@ public class LivePushFragment extends Fragment implements Runnable {
         bundle.putString(PRIVACY_KEY, privacyKey);
         bundle.putBoolean(MIX_EXTERN, mixExtern);
         bundle.putBoolean(MIX_MAIN, mixMain);
+        bundle.putBoolean(BEAUTY_CHECKED, beautyOn);
+        bundle.putInt(FPS, fps);
         livePushFragment.setArguments(bundle);
         return livePushFragment;
     }
 
     @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
             mPushUrl = getArguments().getString(URL_KEY);
@@ -174,6 +177,7 @@ public class LivePushFragment extends Fragment implements Runnable {
             mQualityMode = getArguments().getInt(QUALITY_MODE_KEY);
             mAuthTime = getArguments().getString(AUTH_TIME);
             mPrivacyKey = getArguments().getString(PRIVACY_KEY);
+            mFps = getArguments().getInt(FPS);
             flashState = isFlash;
         }
         if (mAlivcLivePusher != null) {
@@ -183,46 +187,42 @@ public class LivePushFragment extends Fragment implements Runnable {
             mAlivcLivePusher.setLivePushBGMListener(mPushBGMListener);
             isPushing = mAlivcLivePusher.isPushing();
         }
-
-        if (mMixExtern) {
-            //startYUV(getActivity());
-            //startYUV2(getActivity());
-            //startYUV3(getActivity());
-        }
     }
 
-    @Nullable
     @Override
-    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         return inflater.inflate(R.layout.push_fragment, container, false);
     }
 
     @Override
-    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+    public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        mDataButton = (TextView) view.findViewById(R.id.data);
+        mDataView = (DataView) view.findViewById(R.id.ll_data);
+        mDataView.setVisibility(View.GONE);
+        mStatusTV = (TextView) view.findViewById(R.id.tv_status);
         mExit = (ImageView) view.findViewById(R.id.exit);
-        mMusic = (ImageView) view.findViewById(R.id.music);
-        mFlash = (ImageView) view.findViewById(R.id.flash);
+        mMusic = (TextView) view.findViewById(R.id.music);
+        mFlash = (TextView) view.findViewById(R.id.flash);
         mFlash.setSelected(isFlash);
-        mCamera = (ImageView) view.findViewById(R.id.camera);
-        mSnapshot = (ImageView) view.findViewById(R.id.snapshot);
+        mCamera = (TextView) view.findViewById(R.id.camera);
+        mSnapshot = (TextView) view.findViewById(R.id.snapshot);
+        mActionBar = (LinearLayout) view.findViewById(R.id.action_bar);
         mCamera.setSelected(true);
         mSnapshot.setSelected(true);
-        mPreviewButton = (Button) view.findViewById(R.id.preview_button);
+        mPreviewButton = (TextView) view.findViewById(R.id.preview_button);
         mPreviewButton.setSelected(false);
-        mPushButton = (Button) view.findViewById(R.id.push_button);
+        mPushButton = (TextView) view.findViewById(R.id.push_button);
         mPushButton.setSelected(true);
-        mOperaButton = (Button) view.findViewById(R.id.opera_button);
+        mOperaButton = (TextView) view.findViewById(R.id.opera_button);
         mOperaButton.setSelected(false);
-        mMore = (Button) view.findViewById(R.id.more);
-        mBeautyButton = (ImageView) view.findViewById(R.id.beauty_button);
-        mBeautyButton.setSelected(SharedPreferenceUtils.isBeautyOn(getActivity().getApplicationContext()));
-        mAnswer = (TextView) view.findViewById(R.id.answer_button);
-        mRestartButton = (Button) view.findViewById(R.id.restart_button);
-        mTopBar = (LinearLayout) view.findViewById(R.id.top_bar);
+        mMore = (TextView) view.findViewById(R.id.more);
+        mRestartButton = (TextView) view.findViewById(R.id.restart_button);
         mUrl = (TextView) view.findViewById(R.id.push_url);
         mUrl.setText(mPushUrl);
         mIsPushing = (TextView) view.findViewById(R.id.isPushing);
+        mCurFpsLayout = ((TextView) mDataView.findViewById(R.id.tv_data1));
+        mCurBrLayout = ((TextView) mDataView.findViewById(R.id.tv_data2));
         mIsPushing.setText(String.valueOf(isPushing));
         mGuide = (LinearLayout) view.findViewById(R.id.guide);
         mExit.setOnClickListener(onClickListener);
@@ -233,23 +233,9 @@ public class LivePushFragment extends Fragment implements Runnable {
         mPreviewButton.setOnClickListener(onClickListener);
         mPushButton.setOnClickListener(onClickListener);
         mOperaButton.setOnClickListener(onClickListener);
-        mBeautyButton.setOnClickListener(onClickListener);
-        mAnswer.setOnClickListener(onClickListener);
         mRestartButton.setOnClickListener(onClickListener);
         mMore.setOnClickListener(onClickListener);
-//        if(SharedPreferenceUtils.isGuide(getActivity().getApplicationContext())) {
-//            mGuide.setVisibility(View.VISIBLE);
-//            mGuide.setOnTouchListener(new View.OnTouchListener() {
-//                @Override
-//                public boolean onTouch(View view, MotionEvent motionEvent) {
-//                    if(mGuide != null) {
-//                        mGuide.setVisibility(View.GONE);
-//                        SharedPreferenceUtils.setGuide(getActivity().getApplicationContext(), false);
-//                    }
-//                    return false;
-//                }
-//            });
-//        }
+        mDataButton.setOnClickListener(onClickListener);
 
         if (mVideoOnly) {
             mMusic.setVisibility(View.GONE);
@@ -258,21 +244,14 @@ public class LivePushFragment extends Fragment implements Runnable {
             mPreviewButton.setVisibility(View.GONE);
         }
         if (mMixMain) {
-            mBeautyButton.setVisibility(View.GONE);
             mMusic.setVisibility(View.GONE);
             mFlash.setVisibility(View.GONE);
             mCamera.setVisibility(View.GONE);
         }
         mMore.setVisibility(mAudio ? View.GONE : View.VISIBLE);
-//        mTopBar.setVisibility(mAudio ? View.GONE : View.VISIBLE);
-        mBeautyButton.setVisibility(mAudio ? View.GONE : View.VISIBLE);
         mFlash.setVisibility(mAudio ? View.GONE : View.VISIBLE);
         mCamera.setVisibility(mAudio ? View.GONE : View.VISIBLE);
-        mFlash.setClickable(mCameraId == CAMERA_TYPE_FRONT.getCameraId() ? false : true);
-
-        if (mOnCameraSwitchedListener != null) {
-            mBeautyButton.setVisibility(View.GONE);
-        }
+        mFlash.setClickable(mCameraId != CAMERA_TYPE_FRONT.getCameraId());
     }
 
     View.OnClickListener onClickListener = new View.OnClickListener() {
@@ -323,13 +302,12 @@ public class LivePushFragment extends Fragment implements Runnable {
                                     mCameraId = CAMERA_TYPE_FRONT.getCameraId();
                                 }
                                 mAlivcLivePusher.switchCamera();
-                                if (mOnCameraSwitchedListener != null) {
-                                    mOnCameraSwitchedListener.onCameraSwitched(mCameraId);
-                                }
+                                mSkipFrames = 3;
+                                FURenderer.getInstance().setCameraFacing(mCameraId == CAMERA_TYPE_FRONT.getCameraId() ? CameraFacingEnum.CAMERA_FRONT : CameraFacingEnum.CAMERA_BACK);
                                 mFlash.post(new Runnable() {
                                     @Override
                                     public void run() {
-                                        mFlash.setClickable(mCameraId != CAMERA_TYPE_FRONT.getCameraId());
+                                        mFlash.setClickable(mCameraId == CAMERA_TYPE_FRONT.getCameraId() ? false : true);
                                         if (mCameraId == CAMERA_TYPE_FRONT.getCameraId()) {
                                             mFlash.setSelected(false);
                                         } else {
@@ -371,14 +349,14 @@ public class LivePushFragment extends Fragment implements Runnable {
                                 final boolean isPush = mPushButton.isSelected();
                                 if (isPush) {
                                     if (mAsync) {
-                                        mAlivcLivePusher.startPushAysnc(getAuthString(mAuthTime));
+                                        mAlivcLivePusher.startPushAysnc(mPushUrl);
                                     } else {
-                                        mAlivcLivePusher.startPush(getAuthString(mAuthTime));
+                                        mAlivcLivePusher.startPush(mPushUrl);
                                     }
                                     if (mMixExtern) {
                                         //startMixPCM(getActivity());
                                     } else if (mMixMain) {
-//                                        startPCM(getActivity());
+                                        startPCM(getActivity());
                                     }
                                 } else {
                                     mAlivcLivePusher.stopPush();
@@ -398,7 +376,8 @@ public class LivePushFragment extends Fragment implements Runnable {
                                 mPushButton.post(new Runnable() {
                                     @Override
                                     public void run() {
-                                        mPushButton.setText(isPush ? getString(R.string.stop_button) : getString(R.string.start_button));
+                                        mStatusTV.setText(isPush ? getString(R.string.pushing) : getString(R.string.wating_push));
+                                        mPushButton.setText(isPush ? getString(R.string.stop_button) : getString(R.string.start_push));
                                         mPushButton.setSelected(!isPush);
                                     }
                                 });
@@ -428,31 +407,15 @@ public class LivePushFragment extends Fragment implements Runnable {
                                 });
 
                                 break;
-                            case R.id.beauty_button:
-                                PushBeautyDialog pushBeautyDialog = PushBeautyDialog.newInstance(mBeautyButton.isSelected());
-                                pushBeautyDialog.setAlivcLivePusher(mAlivcLivePusher);
-                                pushBeautyDialog.setBeautyListener(mBeautyListener);
-                                pushBeautyDialog.show(getFragmentManager(), "beautyDialog");
-                                break;
-                            case R.id.answer_button:
-                                PushAnswerGameDialog pushAnswerGameDialog = PushAnswerGameDialog.newInstance();
-                                pushAnswerGameDialog.setAlivcLivePusher(mAlivcLivePusher);
-                                pushAnswerGameDialog.show(getFragmentManager(), "answerDialog");
-                                break;
                             case R.id.restart_button:
-                                /*if(mMixExtern) {
-                                    stopYUV();
-                                    stopPcm();
-                                }*/
                                 if (mAsync) {
-                                    mAlivcLivePusher.restartPushAync();
+                                    if (!mIsStartAsnycPushing) {
+                                        mIsStartAsnycPushing = true;
+                                        mAlivcLivePusher.restartPushAync();
+                                    }
                                 } else {
                                     mAlivcLivePusher.restartPush();
                                 }
-                                /*if(mMixExtern) {
-                                    startYUV(getActivity());
-                                    startPCM(getActivity());
-                                }*/
                                 break;
                             case R.id.more:
                                 PushMoreDialog pushMoreDialog = new PushMoreDialog();
@@ -462,7 +425,7 @@ public class LivePushFragment extends Fragment implements Runnable {
                                         if (mAlivcLivePusher != null && mDynamicals.size() < 5) {
                                             float startX = 0.1f + mDynamicals.size() * 0.2f;
                                             float startY = 0.1f + mDynamicals.size() * 0.2f;
-                                            int id = mAlivcLivePusher.addDynamicsAddons(Environment.getExternalStorageDirectory().getPath() + File.separator + "alivc_resource/qizi/", startX, startY, 0.2f, 0.2f);
+                                            int id = mAlivcLivePusher.addDynamicsAddons(getActivity().getFilesDir().getPath() + File.separator + "alivc_resource/qizi/", startX, startY, 0.2f, 0.2f);
                                             if (id > 0) {
                                                 mDynamicals.add(id);
                                             } else {
@@ -474,9 +437,10 @@ public class LivePushFragment extends Fragment implements Runnable {
                                     @Override
                                     public void onRemoveDynamic() {
                                         if (mDynamicals.size() > 0) {
-                                            int id = mDynamicals.get(0);
+                                            int index = mDynamicals.size() - 1;
+                                            int id = mDynamicals.get(index);
                                             mAlivcLivePusher.removeDynamicsAddons(id);
-                                            mDynamicals.remove(0);
+                                            mDynamicals.remove(index);
                                         }
                                     }
                                 });
@@ -489,7 +453,7 @@ public class LivePushFragment extends Fragment implements Runnable {
                                     @Override
                                     public void onSnapshot(Bitmap bmp) {
                                         String dateFormat = new SimpleDateFormat("yyyy-MM-dd-hh-mm-ss-SS").format(new Date());
-                                        File f = new File("/sdcard/", "snapshot-" + dateFormat + ".png");
+                                        File f = new File(getActivity().getExternalFilesDir(Environment.DIRECTORY_PICTURES), "snapshot-" + dateFormat + ".png");
                                         if (f.exists()) {
                                             f.delete();
                                         }
@@ -505,9 +469,22 @@ public class LivePushFragment extends Fragment implements Runnable {
                                             // TODO Auto-generated catch block
                                             e.printStackTrace();
                                         }
-                                        showDialog("截图已保存：" + "/sdcard/snapshot-" + dateFormat + ".png");
+                                        showDialog("截图已保存：" + getActivity().getExternalFilesDir(Environment.DIRECTORY_PICTURES).getPath() + "/snapshot-" + dateFormat + ".png");
                                     }
                                 });
+                                break;
+                            case R.id.data:
+                                mDataView.post(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        if (mDataView.getVisibility() == View.VISIBLE) {
+                                            mDataView.setVisibility(View.INVISIBLE);
+                                        } else {
+                                            mDataView.setVisibility(View.VISIBLE);
+                                        }
+                                    }
+                                });
+                                mHandler.post(mRunnable);
                                 break;
                             default:
                                 break;
@@ -525,6 +502,9 @@ public class LivePushFragment extends Fragment implements Runnable {
         }
     };
 
+    public int getSkipFrames() {
+        return mSkipFrames--;
+    }
 
     public void setAlivcLivePusher(AlivcLivePusher alivcLivePusher) {
         this.mAlivcLivePusher = alivcLivePusher;
@@ -552,6 +532,7 @@ public class LivePushFragment extends Fragment implements Runnable {
 
         @Override
         public void onPushStarted(AlivcLivePusher pusher) {
+            mIsStartAsnycPushing = false;
             showToast(getString(R.string.start_push));
         }
 
@@ -581,27 +562,30 @@ public class LivePushFragment extends Fragment implements Runnable {
          */
         @Override
         public void onPushRestarted(AlivcLivePusher pusher) {
+            mIsStartAsnycPushing = false;
             showToast(getString(R.string.restart_success));
         }
 
         @Override
         public void onFirstFramePreviewed(AlivcLivePusher pusher) {
-            showToast(getString(R.string.first_frame));
+
         }
 
         @Override
         public void onDropFrame(AlivcLivePusher pusher, int countBef, int countAft) {
-            showToast(getString(R.string.drop_frame) + ", 丢帧前：" + countBef + ", 丢帧后：" + countAft);
         }
 
         @Override
         public void onAdjustBitRate(AlivcLivePusher pusher, int curBr, int targetBr) {
-            showToast(getString(R.string.adjust_bitrate) + ", 当前码率：" + curBr + "Kps, 目标码率：" + targetBr + "Kps");
         }
 
         @Override
         public void onAdjustFps(AlivcLivePusher pusher, int curFps, int targetFps) {
-            showToast(getString(R.string.adjust_fps) + ", 当前帧率：" + curFps + ", 目标帧率：" + targetFps);
+        }
+
+        @Override
+        public void onPushStatistics(AlivcLivePusher alivcLivePusher, AlivcLivePushStatsInfo alivcLivePushStatsInfo) {
+
         }
     };
 
@@ -609,12 +593,14 @@ public class LivePushFragment extends Fragment implements Runnable {
 
         @Override
         public void onSystemError(AlivcLivePusher livePusher, AlivcLivePushError error) {
+            mIsStartAsnycPushing = false;
             showDialog(getString(R.string.system_error) + error.toString());
         }
 
         @Override
         public void onSDKError(AlivcLivePusher livePusher, AlivcLivePushError error) {
             if (error != null) {
+                mIsStartAsnycPushing = false;
                 showDialog(getString(R.string.sdk_error) + error.toString());
             }
         }
@@ -639,7 +625,7 @@ public class LivePushFragment extends Fragment implements Runnable {
 
         @Override
         public void onReconnectFail(AlivcLivePusher pusher) {
-
+            mIsStartAsnycPushing = false;
             showDialog(getString(R.string.reconnect_fail));
         }
 
@@ -650,23 +636,25 @@ public class LivePushFragment extends Fragment implements Runnable {
 
         @Override
         public void onSendDataTimeout(AlivcLivePusher pusher) {
+            mIsStartAsnycPushing = false;
             showDialog(getString(R.string.senddata_timeout));
         }
 
         @Override
         public void onConnectFail(AlivcLivePusher pusher) {
+            mIsStartAsnycPushing = false;
             showDialog(getString(R.string.connect_fail));
         }
 
         @Override
         public void onConnectionLost(AlivcLivePusher pusher) {
+            mIsStartAsnycPushing = false;
             showToast("推流已断开");
         }
 
         @Override
         public String onPushURLAuthenticationOverdue(AlivcLivePusher pusher) {
-            showDialog("流即将过期，请更换url");
-            return getAuthString(mAuthTime);
+            return "";
         }
 
         @Override
@@ -731,11 +719,12 @@ public class LivePushFragment extends Fragment implements Runnable {
 
     @Override
     public void onDestroy() {
-        //stopPcm();
-        //stopYUV();
         super.onDestroy();
         if (mExecutorService != null && !mExecutorService.isShutdown()) {
             mExecutorService.shutdown();
+        }
+        if (mHandler != null) {
+            mHandler.removeCallbacks(mRunnable);
         }
     }
 
@@ -777,15 +766,40 @@ public class LivePushFragment extends Fragment implements Runnable {
         if (getActivity() == null || message == null) {
             return;
         }
+        if (mDialog == null || !mDialog.isShowing()) {
+            Handler handler = new Handler(Looper.getMainLooper());
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    if (getActivity() != null) {
+                        mDialog = new CommonDialog(getActivity());
+                        mDialog.setDialogTitle(getString(R.string.dialog_title));
+                        mDialog.setDialogContent(message);
+                        mDialog.setConfirmButton(TextFormatUtil.getTextFormat(getActivity(), R.string.ok), new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                dialog.dismiss();
+                            }
+                        });
+                        mDialog.show();
+                    }
+                }
+            });
+        }
+    }
+
+    private void showDialog(final String title, final String message) {
+        if (getActivity() == null || message == null) {
+            return;
+        }
         Handler handler = new Handler(Looper.getMainLooper());
         handler.post(new Runnable() {
             @Override
             public void run() {
                 if (getActivity() != null) {
                     final AlertDialog.Builder dialog = new AlertDialog.Builder(getActivity());
-                    dialog.setTitle(getString(R.string.dialog_title));
                     dialog.setMessage(message);
-                    dialog.setNegativeButton(getString(R.string.ok), new DialogInterface.OnClickListener() {
+                    dialog.setPositiveButton(getString(R.string.ok), new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialogInterface, int i) {
 
@@ -865,15 +879,6 @@ public class LivePushFragment extends Fragment implements Runnable {
         void onBeautySwitch(boolean beauty);
     }
 
-    private BeautyListener mBeautyListener = new BeautyListener() {
-        @Override
-        public void onBeautySwitch(boolean beauty) {
-            if (mBeautyButton != null) {
-                mBeautyButton.setSelected(beauty);
-            }
-        }
-    };
-
     private String getMD5(String string) {
 
         byte[] hash;
@@ -908,21 +913,6 @@ public class LivePushFragment extends Fragment implements Runnable {
         return result;
     }
 
-//    private void showTimeDialog() {
-//        final EditText et = new EditText(getActivity());
-//        et.setInputType(InputType.TYPE_CLASS_NUMBER);
-//        new AlertDialog.Builder(getContext()).setTitle("输入流鉴权时间")
-//                .setView(et)
-//                .setPositiveButton("确定", new DialogInterface.OnClickListener() {
-//                    public void onClick(DialogInterface dialog, int which) {
-//                        String input = et.getText().toString();
-//                        getAuthString(input);
-//                    }
-//                })
-//                .setNegativeButton("取消", null)
-//                .show();
-//    }
-
     private String getAuthString(String time) {
         if (!time.isEmpty() && !mPrivacyKey.isEmpty()) {
             long tempTime = (System.currentTimeMillis() + Integer.valueOf(time)) / 1000;
@@ -934,222 +924,6 @@ public class LivePushFragment extends Fragment implements Runnable {
         }
         return mTempUrl;
     }
-
-    /*public void startYUV(final Context context) {
-        mExecutorService.execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                if(mMixMain) {
-                    //mAlivcLivePusher.setMainStreamPosition(0.5f, 0.5f, 0.5f, 0.5f);
-                }
-                videoThreadOn = true;
-                byte[] yuv;
-                int mixvideId = 0;
-                InputStream myInput = null;
-                try {
-                    File f = new File("/sdcard/alivc_resource/me2.yuv");
-                    myInput = new FileInputStream(f);
-                    mixvideId = mAlivcLivePusher.addMixVideo(AlivcImageFormat.IMAGE_FORMAT_YUVNV12,1080,720,0,0.35f,0.78f,0.3f,0.2f);
-                    byte[] buffer = new byte[1080*720*3/2];
-                    int length = myInput.read(buffer);
-                    //发数据
-                    while(length > 0 && videoThreadOn)
-                    {
-                        mAlivcLivePusher.inputMixVideoData(mixvideId,buffer,1080,720, 1080*720*3/2,System.nanoTime()/1000,0);
-                        try {
-                            Thread.sleep(40);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                        //发数据
-                        length = myInput.read(buffer);
-                        if(length < 1080*720*3/2)
-                        {
-                            myInput.close();
-                            myInput = new FileInputStream(f);
-                            length = myInput.read(buffer);
-                        }
-                    }
-                    mAlivcLivePusher.removeMixVideo(mixvideId);
-                    myInput.close();
-                    videoThreadOn = false;
-                    mAlivcLivePusher.removeMixVideo(mixvideId);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-
-    }
-
-    public void startYUV2(final Context context) {
-        mExecutorService.execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                int mixvideId = 0;
-                videoThreadOn2 = true;
-                byte[] yuv;
-                InputStream myInput = null;
-                try {
-                    File f = new File("/sdcard/alivc_resource/screenrecord3.yuv");
-                    myInput = new FileInputStream(f);
-                    mixvideId = mAlivcLivePusher.addMixVideo(AlivcImageFormat.IMAGE_FORMAT_YUVNV12,720,1064,0,0.7f,0.78f,0.2f,0.2f);
-                    byte[] buffer = new byte[1064*720*3/2];
-                    int length = myInput.read(buffer);
-                    //发数据
-                    while(length > 0 && videoThreadOn2)
-                    {
-                        mAlivcLivePusher.inputMixVideoData(mixvideId,buffer,720, 1064, 720*1064*3/2,System.nanoTime()/1000,0);
-                        try {
-                            Thread.sleep(40);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                        //发数据
-                        length = myInput.read(buffer);
-                        if(length < 720*1064*3/2)
-                        {
-                            myInput.close();
-                            myInput = new FileInputStream(f);
-                            length = myInput.read(buffer);
-                        }
-                    }
-                    mAlivcLivePusher.removeMixVideo(mixvideId);
-                    myInput.close();
-                    videoThreadOn2 = false;
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-
-    }
-
-    public void startYUV3(final Context context) {
-        mExecutorService.execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                videoThreadOn3 = true;
-                byte[] yuv;
-                int mixvideId = 0;
-                int framecount = 0;
-                InputStream myInput = null;
-                try {
-                    File f = new File("/sdcard/alivc_resource/he3.yuv");
-                    myInput = new FileInputStream(f);
-                    mixvideId = mAlivcLivePusher.addMixVideo(AlivcImageFormat.IMAGE_FORMAT_YUVNV12,1080,720,0,0.0f,0.78f,0.3f,0.2f);
-                    byte[] buffer = new byte[1080*720*3/2];
-                    int length = myInput.read(buffer);
-                    //发数据
-                    while(length > 0 && videoThreadOn3)
-                    {
-                        mAlivcLivePusher.inputMixVideoData(mixvideId,buffer,1080, 720, 1080*720*3/2,System.nanoTime()/1000,0);
-                        try {
-                            Thread.sleep(40);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                        framecount++;
-                        if(framecount == 125) {
-                            mAlivcLivePusher.mixStreamRequireMain(mixvideId, true);
-                        }
-                        //发数据
-                        length = myInput.read(buffer);
-                        if(length < 1080*720*3/2)
-                        {
-                            myInput.close();
-                            myInput = new FileInputStream(f);
-                            length = myInput.read(buffer);
-                            //mAlivcLivePusher.removeMixVideo(mixvideId);
-                            //break;
-                        }
-                    }
-                    mAlivcLivePusher.removeMixVideo(mixvideId);
-                    myInput.close();
-                    videoThreadOn3 = false;
-                    mAlivcLivePusher.removeMixVideo(mixvideId);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-
-    }*/
-
-    /*private void stopYUV() {
-        videoThreadOn = false;
-        videoThreadOn2 = false;
-        videoThreadOn3 = false;
-    }
-
-    private void startMixPCM(final Context context) {
-        mExecutorService.execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                audioThreadOn = true;
-                byte[] pcm;
-                int offset = 0;
-                int mixAudioId = 0;
-                InputStream myInput = null;
-                OutputStream myOutput = null;
-                boolean reUse = false;
-                try {
-                    File f = new File("/sdcard/alivc_resource/441.pcm");
-                    myInput = new FileInputStream(f);
-                    mixAudioId = mAlivcLivePusher.addMixAudio(1, AlivcSoundFormat.SOUND_FORMAT_S16,44100);
-                    byte[] buffer = new byte[2048];
-                    int length = myInput.read(buffer,0,2048);
-                    offset += length;
-                    while(length > 0 && audioThreadOn)
-                    {
-                        reUse = mAlivcLivePusher.inputMixAudioData(mixAudioId,buffer,length, System.nanoTime()/1000);
-                        if(reUse) {
-                            //发数据
-                            length = myInput.read(buffer);
-                            offset += length;
-                            if (length < 2048) {
-                                myInput.close();
-                                offset = 0;
-                                myInput = new FileInputStream(f);
-                                length = myInput.read(buffer);
-                                offset += length;
-                            }
-                        }
-                        try {
-                            Thread.sleep(3);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                    myInput.close();
-                    mAlivcLivePusher.removeMixAudio(mixAudioId);
-                    audioThreadOn = false;
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-    }*/
 
     private void startPCM(final Context context) {
         new ScheduledThreadPoolExecutor(1, new ThreadFactory() {
@@ -1224,25 +998,50 @@ public class LivePushFragment extends Fragment implements Runnable {
         void onRemoveDynamic();
     }
 
-    public static void saveBitmap(Bitmap pBitmap, File savePath, String fileName, Bitmap.CompressFormat format) {
-        if (format == null) {
-            format = Bitmap.CompressFormat.JPEG;
-        }
-        // 保存图片
-        FileOutputStream fos = null;
-        try {
-            fos = new FileOutputStream(new File(savePath, fileName));
-            if (fos != null) {
-                pBitmap.compress(format, 100, fos);
-                fos.flush();
-            }
-        } catch (IOException pE) {
-        } finally {
-            try {
-                fos.close();
-            } catch (IOException e) {
+    private Runnable mRunnable = new Runnable() {
+        @Override
+        public void run() {
 
-            }
+            new AsyncTask<AlivcLivePushStatsInfo, Void, AlivcLivePushStatsInfo>() {
+                @Override
+                protected AlivcLivePushStatsInfo doInBackground(AlivcLivePushStatsInfo... alivcLivePushStatsInfos) {
+                    try {
+                        mPushStatsInfo = mAlivcLivePusher.getLivePushStatsInfo();
+                    } catch (IllegalStateException e) {
+
+                    }
+                    return mPushStatsInfo;
+                }
+
+                @Override
+                protected void onPostExecute(AlivcLivePushStatsInfo alivcLivePushStatsInfo) {
+                    super.onPostExecute(alivcLivePushStatsInfo);
+                    if (mAlivcLivePusher != null) {
+                        if (mCurBrLayout != null) {
+                            mCurBrLayout.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    if (mPushStatsInfo != null && mPushStatsInfo.getVideoEncodeBitrate() != 0) {
+                                        mCurBrLayout.setText("编码码率:" + mPushStatsInfo.getVideoEncodeBitrate() + "kbps");
+                                    }
+                                }
+                            });
+                        }
+                        if (mCurFpsLayout != null) {
+                            mCurFpsLayout.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    if (mPushStatsInfo != null && mPushStatsInfo.getVideoEncodeFps() != 0) {
+                                        mCurFpsLayout.setText("发送帧率:" + mPushStatsInfo.getVideoEncodeFps() + "fps");
+                                    }
+                                }
+                            });
+                        }
+                    }
+                    mHandler.postDelayed(mRunnable, REFRESH_INTERVAL);
+                }
+            }.execute();
         }
-    }
+    };
+
 }

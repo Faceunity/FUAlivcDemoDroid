@@ -1,1 +1,3 @@
-include ':alivc-livepusher-demo', ':faceunity'
+include ':faceunity'
+include ':imageutil'
+include ':alivc-livepusher-demo'

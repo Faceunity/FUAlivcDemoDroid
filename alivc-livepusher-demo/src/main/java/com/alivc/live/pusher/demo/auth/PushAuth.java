@@ -18,7 +18,7 @@ public class PushAuth {
     private final static String PRE_NAME = "name";
 
     private final static String DEFAULT_STREAM_NAME = "stream";
-    private final static String PUSH_URL = "rtmp://push-demo-rtmp.aliyunlive.com";
+    private final static String PUSH_URL = "artp://testdomain.com/app/name";
     private final static String APP_NAME = "test";
 
     public static String wrapAuthUrl() {

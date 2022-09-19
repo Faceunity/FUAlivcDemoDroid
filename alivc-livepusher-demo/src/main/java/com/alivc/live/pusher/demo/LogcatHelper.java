@@ -25,14 +25,10 @@ public class LogcatHelper {
     private int mPId;
 
     private void init(Context context) {
-        if (Environment.getExternalStorageState().equals(
-                Environment.MEDIA_MOUNTED)) {
-            PATH_LOGCAT = Environment.getExternalStorageDirectory()
-                    .getAbsolutePath() + File.separator + PATH_DIR;
-        } else {
-            PATH_LOGCAT = context.getFilesDir().getAbsolutePath()
-                    + File.separator + PATH_DIR;
-        }
+
+        PATH_LOGCAT = context.getFilesDir().getAbsolutePath()
+                + File.separator + PATH_DIR;
+
         File file = new File(PATH_LOGCAT);
         if (!file.exists()) {
             file.mkdirs();

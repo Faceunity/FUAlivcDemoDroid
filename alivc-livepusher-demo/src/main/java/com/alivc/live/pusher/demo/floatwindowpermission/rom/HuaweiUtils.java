@@ -40,9 +40,6 @@ public class HuaweiUtils {
         try {
             Intent intent = new Intent();
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-//   ComponentName comp = new ComponentName("com.huawei.systemmanager","com.huawei.permissionmanager.ui.MainActivity");//华为权限管理
-//   ComponentName comp = new ComponentName("com.huawei.systemmanager",
-//      "com.huawei.permissionmanager.ui.SingleAppActivity");//华为权限管理，跳转到指定app的权限管理位置需要华为接口权限，未解决
             ComponentName comp = new ComponentName("com.huawei.systemmanager", "com.huawei.systemmanager.addviewmonitor.AddViewMonitorActivity");//悬浮窗管理页面
             intent.setComponent(comp);
             if (RomUtils.getEmuiVersion() == 3.1) {

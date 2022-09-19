@@ -13,16 +13,9 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.net.ConnectivityManager;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
-import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentPagerAdapter;
-import android.support.v4.view.ViewPager;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
@@ -35,34 +28,51 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.TextView;
 
-import com.alivc.component.custom.AlivcLivePushCustomDetect;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentPagerAdapter;
+import androidx.viewpager.widget.ViewPager;
+
 import com.alivc.component.custom.AlivcLivePushCustomFilter;
-import com.alivc.live.detect.TaoFaceFilter;
-import com.alivc.live.filter.TaoBeautyFilter;
+import com.alivc.live.pusher.AlivcLiveBase;
 import com.alivc.live.pusher.AlivcLivePushConfig;
+import com.alivc.live.pusher.AlivcLivePushLogLevel;
 import com.alivc.live.pusher.AlivcLivePushStatsInfo;
 import com.alivc.live.pusher.AlivcLivePusher;
 import com.alivc.live.pusher.AlivcPreviewOrientationEnum;
 import com.alivc.live.pusher.LogUtil;
+import com.alivc.live.pusher.PreferenceUtil;
 import com.alivc.live.pusher.SurfaceStatus;
-import com.alivc.live.pusher.demo.custom.CameraRenderer;
-import com.alivc.live.pusher.demo.utils.PreferenceUtil;
+import com.alivc.live.pusher.profile.CSVUtils;
+import com.alivc.live.pusher.profile.Constant;
+import com.faceunity.core.enumeration.CameraFacingEnum;
+import com.faceunity.core.enumeration.FUAIProcessorEnum;
+import com.faceunity.core.enumeration.FUInputTextureEnum;
+import com.faceunity.core.enumeration.FUTransformMatrixEnum;
+import com.faceunity.core.utils.CameraUtils;
 import com.faceunity.nama.FURenderer;
+import com.faceunity.nama.data.FaceUnityDataFactory;
+import com.faceunity.nama.listener.FURendererListener;
 import com.faceunity.nama.ui.FaceUnityView;
-import com.faceunity.nama.utils.CameraUtils;
+import com.faceunity.wrapper.faceunity;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static android.os.Environment.MEDIA_MOUNTED;
 import static com.alivc.live.pusher.AlivcPreviewOrientationEnum.ORIENTATION_LANDSCAPE_HOME_LEFT;
 import static com.alivc.live.pusher.AlivcPreviewOrientationEnum.ORIENTATION_LANDSCAPE_HOME_RIGHT;
 import static com.alivc.live.pusher.AlivcPreviewOrientationEnum.ORIENTATION_PORTRAIT;
@@ -83,6 +93,8 @@ public class LivePushActivity extends AppCompatActivity implements SensorEventLi
     private static final String PRIVACY_KEY = "privacy_key";
     private static final String MIX_EXTERN = "mix_extern";
     private static final String MIX_MAIN = "mix_main";
+    private static final String BEAUTY_CHECKED = "beauty_checked";
+    private static final String FPS = "fps";
     public static final int REQ_CODE_PUSH = 0x1112;
     public static final int CAPTURE_PERMISSION_REQUEST_CODE = 0x1123;
 
@@ -108,33 +120,29 @@ public class LivePushActivity extends AppCompatActivity implements SensorEventLi
     private int mOrientation = ORIENTATION_PORTRAIT.ordinal();
 
     private SurfaceStatus mSurfaceStatus = SurfaceStatus.UNINITED;
-    //    private Handler mHandler = new Handler();
+//    private Handler mHandler = new Handler();
     private boolean isPause = false;
 
     private int mCameraId = Camera.CameraInfo.CAMERA_FACING_FRONT;
     private boolean mFlash = false;
     private boolean mMixExtern = false;
     private boolean mMixMain = false;
+    private boolean mBeautyOn = true;
     AlivcLivePushStatsInfo alivcLivePushStatsInfo = null;
-    TaoBeautyFilter taoBeautyFilter;
-
-    TaoFaceFilter taoFaceFilter;
-
     private String mAuthTime = "";
     private String mPrivacyKey = "";
 
-    //    private ConnectivityChangedReceiver mChangedReceiver = new ConnectivityChangedReceiver();
+//    private ConnectivityChangedReceiver mChangedReceiver = new ConnectivityChangedReceiver();
     private boolean videoThreadOn = false;
     private boolean audioThreadOn = false;
 
     private int mNetWork = 0;
+    private int mFps;
 
     private FURenderer mFURenderer;
-    private boolean mIsFuBeautyOn;
-    private int mSkippedFrames = 5;
+    private FaceUnityDataFactory mFaceUnityDataFactory;
+    private TextView mTvTrackText, mTvFps;
     private SensorManager mSensorManager;
-    private TextView mTvFps;
-    private CameraRenderer mCameraRenderer;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -151,16 +159,29 @@ public class LivePushActivity extends AppCompatActivity implements SensorEventLi
         mFlash = getIntent().getBooleanExtra(FLASH_ON, false);
         mAuthTime = getIntent().getStringExtra(AUTH_TIME);
         mPrivacyKey = getIntent().getStringExtra(PRIVACY_KEY);
-        mMixExtern = getIntent().getBooleanExtra(MIX_EXTERN, false);
+        mMixExtern = getIntent().getBooleanExtra(MIX_EXTERN,false);
         mMixMain = getIntent().getBooleanExtra(MIX_MAIN, false);
+        mBeautyOn = getIntent().getBooleanExtra(BEAUTY_CHECKED, true);
+        mFps = getIntent().getIntExtra(FPS, 0);
         setOrientation(mOrientation);
         setContentView(R.layout.activity_push);
         initView();
+
+        // 日志配置
+        AlivcLiveBase.setLogLevel(AlivcLivePushLogLevel.AlivcLivePushLogLevelDebug);
+        AlivcLiveBase.setConsoleEnabled(true);
+        String logPath = getFilePath(getApplicationContext(), "log_path");
+        // full log file limited was kLogMaxFileSizeInKB * 5 (parts)
+        int maxPartFileSizeInKB = 100 * 1024 * 1024; //100G
+        AlivcLiveBase.setLogDirPath(logPath, maxPartFileSizeInKB);
+
+        AlivcLiveBase.registerSDK();
+
         mAlivcLivePushConfig = (AlivcLivePushConfig) getIntent().getSerializableExtra(AlivcLivePushConfig.CONFIG);
         mAlivcLivePusher = new AlivcLivePusher();
 
         try {
-            mAlivcLivePusher.init(getApplicationContext(), mAlivcLivePushConfig);
+            mAlivcLivePusher.init(getApplicationContext(),mAlivcLivePushConfig);
         } catch (IllegalArgumentException e) {
             e.printStackTrace();
             showDialog(this, e.getMessage());
@@ -168,144 +189,10 @@ public class LivePushActivity extends AppCompatActivity implements SensorEventLi
             e.printStackTrace();
             showDialog(this, e.getMessage());
         }
-
-        String isOpen = PreferenceUtil.getString(LiveApplication.getInstance(), PreferenceUtil.KEY_FACEUNITY_ISON);
-        mIsFuBeautyOn = "true".equals(isOpen);
-        FaceUnityView beautyControlView = findViewById(R.id.faceunity_control_view);
-        if (mIsFuBeautyOn && !mAlivcLivePushConfig.isExternMainStream()) {
-            FURenderer.setup(this);
-            mFURenderer = new FURenderer
-                    .Builder(this)
-                    .setInputTextureType(FURenderer.INPUT_TEXTURE_2D)
-                    .setRunBenchmark(true)
-                    .setOnDebugListener(new FURenderer.OnDebugListener() {
-                        @Override
-                        public void onFpsChanged(double fps, double callTime) {
-                            final String FPS = String.format(Locale.getDefault(), "%.2f", fps);
-                            Log.e(TAG, "onFpsChanged: FPS " + FPS + " callTime " + String.format(Locale.getDefault(), "%.2f", callTime));
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    if (mTvFps != null) {
-                                        mTvFps.setText("FPS: " + FPS);
-                                    }
-                                }
-                            });
-                        }
-                    })
-                    .build();
-            beautyControlView.setModuleManager(mFURenderer);
-        } else {
-            beautyControlView.setVisibility(View.GONE);
-        }
-
-        mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-        Sensor sensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        mSensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_NORMAL);
-
-        mAlivcLivePusher.setCustomDetect(new AlivcLivePushCustomDetect() {
-            @Override
-            public void customDetectCreate() {
-                taoFaceFilter = new TaoFaceFilter(getApplicationContext());
-                taoFaceFilter.customDetectCreate();
-            }
-
-            @Override
-            public long customDetectProcess(long data, int width, int height, int rotation, int format, long extra) {
-                if (taoFaceFilter != null) {
-                    return taoFaceFilter.customDetectProcess(data, width, height, rotation, format, extra);
-                }
-                return 0;
-            }
-
-            @Override
-            public void customDetectDestroy() {
-                if (taoFaceFilter != null) {
-                    taoFaceFilter.customDetectDestroy();
-                }
-            }
-        });
-
-        // 自定义美颜 faceunity
-        mAlivcLivePusher.setCustomFilter(new AlivcLivePushCustomFilter() {
-            @Override
-            public void customFilterCreate() {
-                Log.d(TAG, "customFilterCreate: ");
-                if (!mIsFuBeautyOn) {
-                    taoBeautyFilter = new TaoBeautyFilter();
-                    taoBeautyFilter.customFilterCreate();
-                } else {
-                    mFURenderer.onSurfaceCreated();
-                }
-            }
-
-            @Override
-            public void customFilterUpdateParam(float fSkinSmooth, float fWhiten, float fWholeFacePink, float fThinFaceHorizontal, float fCheekPink, float fShortenFaceVertical, float fBigEye) {
-                if (!mIsFuBeautyOn) {
-                    if (taoBeautyFilter != null) {
-                        taoBeautyFilter.customFilterUpdateParam(fSkinSmooth, fWhiten, fWholeFacePink, fThinFaceHorizontal, fCheekPink, fShortenFaceVertical, fBigEye);
-                    }
-                }
-            }
-
-            @Override
-            public void customFilterSwitch(boolean on) {
-                Log.d(TAG, "customFilterSwitch: " + on);
-                if (!mIsFuBeautyOn) {
-                    if (taoBeautyFilter != null) {
-                        taoBeautyFilter.customFilterSwitch(on);
-                    }
-                }
-            }
-
-            @Override
-            public int customFilterProcess(int inputTexture, int textureWidth, int textureHeight, long extra) {
-                if (!mIsFuBeautyOn) {
-                    if (taoBeautyFilter != null) {
-                        return taoBeautyFilter.customFilterProcess(inputTexture, textureWidth, textureHeight, extra);
-                    }
-                    return inputTexture;
-                }
-                int fuTex = mFURenderer.onDrawFrameSingleInput(inputTexture, textureWidth, textureHeight);
-                if (mSkippedFrames > 0) {
-                    mSkippedFrames--;
-                    return 0;
-                }
-                return fuTex;
-            }
-
-            @Override
-            public void customFilterDestroy() {
-                Log.d(TAG, "customFilterDestroy: ");
-                if (!mIsFuBeautyOn) {
-                    if (taoBeautyFilter != null) {
-                        taoBeautyFilter.customFilterDestroy();
-                    }
-                    taoBeautyFilter = null;
-                } else {
-                    mFURenderer.onSurfaceDestroyed();
-                }
-            }
-        });
-
-        mLivePushFragment = LivePushFragment.newInstance(mPushUrl, mAsync, mAudioOnly, mVideoOnly, mCameraId, mFlash, mAlivcLivePushConfig.getQualityMode().getQualityMode(), mAuthTime, mPrivacyKey, mMixExtern, mMixMain);
+        initFU();
+        mLivePushFragment = LivePushFragment.newInstance(mPushUrl, mAsync, mAudioOnly, mVideoOnly, mCameraId, mFlash, mAlivcLivePushConfig.getQualityMode().getQualityMode(), mAuthTime, mPrivacyKey, mMixExtern, mMixMain,mBeautyOn,mFps);
         mLivePushFragment.setAlivcLivePusher(mAlivcLivePusher);
         mLivePushFragment.setStateListener(mStateListener);
-        mLivePushFragment.setOnCameraSwitchedListener(new LivePushFragment.OnCameraSwitchedListener() {
-            @Override
-            public void onCameraSwitched(int cameraId) {
-                if (mFURenderer != null) {
-                    mSkippedFrames = 5;
-                    mFURenderer.onCameraChanged(cameraId, CameraUtils.getCameraOrientation(cameraId));
-                    if (mFURenderer.getMakeupModule() != null) {
-                        mFURenderer.getMakeupModule().setIsMakeupFlipPoints(cameraId == Camera.CameraInfo.CAMERA_FACING_FRONT ? 0 : 1);
-                    }
-                }
-                if (mCameraRenderer != null) {
-                    mCameraRenderer.switchCamera();
-                }
-            }
-        });
         mPushTextStatsFragment = new PushTextStatsFragment();
         mPushDiagramStatsFragment = new PushDiagramStatsFragment();
 
@@ -313,67 +200,135 @@ public class LivePushActivity extends AppCompatActivity implements SensorEventLi
         mScaleDetector = new ScaleGestureDetector(getApplicationContext(), mScaleGestureDetector);
         mDetector = new GestureDetector(getApplicationContext(), mGestureDetector);
         mNetWork = NetWorkUtils.getAPNType(this);
-//        IntentFilter filter = new IntentFilter();
-//        filter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
-//        registerReceiver(mChangedReceiver, filter);
+    }
+
+    private FURendererListener mFURendererListener = new FURendererListener() {
+
+        @Override
+        public void onPrepare() {
+            mFaceUnityDataFactory.bindCurrentRenderer();
+        }
+
+        @Override
+        public void onTrackStatusChanged(FUAIProcessorEnum type, int status) {
+            Log.e(TAG, "onTrackStatusChanged: 人脸数: " + status);
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    mTvTrackText.setVisibility(status > 0 ? View.GONE : View.VISIBLE);
+                    if (type == FUAIProcessorEnum.FACE_PROCESSOR) {
+                        mTvTrackText.setText(R.string.toast_not_detect_face);
+                    }else if (type == FUAIProcessorEnum.HUMAN_PROCESSOR) {
+                        mTvTrackText.setText(R.string.toast_not_detect_body);
+                    }
+                }
+            });
+        }
+
+        @Override
+        public void onFpsChanged(double fps, double callTime) {
+            final String FPS = String.format(Locale.getDefault(), "%.2f", fps);
+            Log.e(TAG, "onFpsChanged: FPS " + FPS + " callTime " + String.format(Locale.getDefault(), "%.2f", callTime));
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    mTvFps.setText(FPS);
+                }
+            });
+        }
+
+        @Override
+        public void onRelease() {
+        }
+    };
+
+    private CSVUtils mCSVUtils;
+    private void initFU() {
+        FaceUnityView beautyControlView = findViewById(R.id.faceunity_control);
+        String isOpen = PreferenceUtil.getString(this, PreferenceUtil.KEY_FACEUNITY_IS_ON);
+        if (TextUtils.isEmpty(isOpen) || isOpen.equals("false")) {
+            beautyControlView.setVisibility(View.GONE);
+            return;
+        }
+        mTvTrackText = findViewById(R.id.tv_track_text);
+        mTvFps = findViewById(R.id.tv_fps);
+
+        mFURenderer = FURenderer.getInstance();
+        mFURenderer.setup(this);
+
+        mFURenderer.setMarkFPSEnable(true);
+        mFURenderer.setInputTextureType(FUInputTextureEnum.FU_ADM_FLAG_COMMON_TEXTURE);
+        mFURenderer.setCameraFacing(CameraFacingEnum.CAMERA_FRONT);
+        mFURenderer.setInputTextureMatrix(FUTransformMatrixEnum.CCROT0_FLIPVERTICAL);
+        mFURenderer.setInputBufferMatrix(FUTransformMatrixEnum.CCROT0_FLIPVERTICAL);
+        mFURenderer.setOutputMatrix(FUTransformMatrixEnum.CCROT0);
+
+
+        mFaceUnityDataFactory = new FaceUnityDataFactory(0);
+        beautyControlView.bindDataFactory(mFaceUnityDataFactory);
+        mAlivcLivePusher.setCustomFilter(new AlivcLivePushCustomFilter() {
+            @Override
+            public void customFilterCreate() {
+                mFURenderer.prepareRenderer(mFURendererListener);
+                initCsvUtil(LivePushActivity.this);
+            }
+
+            @Override
+            public int customFilterProcess(int inputTexture, int textureWidth, int textureHeight, long extra) {
+                if (mLivePushFragment != null && mLivePushFragment.getSkipFrames() > 0) {
+                    faceunity.fuClearCacheResource();
+                    faceunity.fuOnCameraChange();
+                    return 0;
+                }
+                long start = System.nanoTime();
+                int texId = mFURenderer.onDrawFrameSingleInput(inputTexture, textureWidth, textureHeight);
+                long time = System.nanoTime() - start;
+                mCSVUtils.writeCsv(null, time);
+                return texId;
+            }
+
+            @Override
+            public void customFilterDestroy() {
+                mFURenderer.release();
+                mCSVUtils.close();
+            }
+        });
+
+        mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        Sensor sensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        mSensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_NORMAL);
     }
 
     public void initView() {
         mPreviewView = (SurfaceView) findViewById(R.id.preview_view);
         mPreviewView.getHolder().addCallback(mCallback);
-        mTvFps = findViewById(R.id.tv_fps);
     }
 
     private void initViewPager() {
         mViewPager = (ViewPager) findViewById(R.id.tv_pager);
-//        mFragmentList.add(mPushTextStatsFragment);
         mFragmentList.add(mLivePushFragment);
-//        mFragmentList.add(mPushDiagramStatsFragment);
-        mFragmentAdapter = new FragmentAdapter(this.getSupportFragmentManager(), mFragmentList);
+        mFragmentAdapter = new FragmentAdapter(this.getSupportFragmentManager(), mFragmentList) ;
         mViewPager.setAdapter(mFragmentAdapter);
-//        mViewPager.setCurrentItem(1);
         mViewPager.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View view, MotionEvent motionEvent) {
-//                if(((ViewPager)view).getCurrentItem() == 1) {
-                if (motionEvent.getPointerCount() >= 2 && mScaleDetector != null) {
-                    mScaleDetector.onTouchEvent(motionEvent);
-                } else if (motionEvent.getPointerCount() == 1 && mDetector != null) {
-                    mDetector.onTouchEvent(motionEvent);
-                }
+                    if (motionEvent.getPointerCount() >= 2 && mScaleDetector != null) {
+                        mScaleDetector.onTouchEvent(motionEvent);
+                    } else if (motionEvent.getPointerCount() == 1 && mDetector != null) {
+                        mDetector.onTouchEvent(motionEvent);
+                    }
 //                }
                 return false;
             }
         });
-
-//        mViewPager.setOnPageChangeListener(new ViewPager.OnPageChangeListener() {
-//            @Override
-//            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-//
-//            }
-//
-//            @Override
-//            public void onPageSelected(final int arg0) {
-//                if(arg0 == 1) {
-//                    mHandler.removeCallbacks(mRunnable);
-//                } else {
-//                    mHandler.post(mRunnable);
-//                }
-//            }
-//
-//            @Override
-//            public void onPageScrollStateChanged(int state) {
-//
-//            }
-//        });
     }
 
     private void setOrientation(int orientation) {
-        if (orientation == ORIENTATION_PORTRAIT.ordinal()) {
+        if(orientation == ORIENTATION_PORTRAIT.ordinal()) {
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-        } else if (orientation == ORIENTATION_LANDSCAPE_HOME_RIGHT.ordinal()) {
+        } else if(orientation == ORIENTATION_LANDSCAPE_HOME_RIGHT.ordinal()) {
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-        } else if (orientation == ORIENTATION_LANDSCAPE_HOME_LEFT.ordinal()) {
+        } else if(orientation == ORIENTATION_LANDSCAPE_HOME_LEFT.ordinal()) {
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE);
         }
     }
@@ -394,7 +349,7 @@ public class LivePushActivity extends AppCompatActivity implements SensorEventLi
             if (mPreviewView.getWidth() > 0 && mPreviewView.getHeight() > 0) {
                 float x = motionEvent.getX() / mPreviewView.getWidth();
                 float y = motionEvent.getY() / mPreviewView.getHeight();
-                try {
+                try{
                     mAlivcLivePusher.focusCameraAtAdjustedPoint(x, y, true);
                 } catch (IllegalStateException e) {
 
@@ -415,7 +370,7 @@ public class LivePushActivity extends AppCompatActivity implements SensorEventLi
 
         @Override
         public boolean onFling(MotionEvent motionEvent, MotionEvent motionEvent1, float v, float v1) {
-            if (motionEvent == null || motionEvent1 == null) {
+            if(motionEvent == null || motionEvent1 == null) {
                 return false;
             }
             if (motionEvent.getX() - motionEvent1.getX() > FLING_MIN_DISTANCE
@@ -433,19 +388,19 @@ public class LivePushActivity extends AppCompatActivity implements SensorEventLi
     private ScaleGestureDetector.OnScaleGestureListener mScaleGestureDetector = new ScaleGestureDetector.OnScaleGestureListener() {
         @Override
         public boolean onScale(ScaleGestureDetector scaleGestureDetector) {
-            if (scaleGestureDetector.getScaleFactor() > 1) {
+            if(scaleGestureDetector.getScaleFactor() > 1) {
                 scaleFactor += 0.5;
             } else {
                 scaleFactor -= 2;
             }
-            if (scaleFactor <= 1) {
+            if(scaleFactor <= 1) {
                 scaleFactor = 1;
             }
-            try {
-                if (scaleFactor >= mAlivcLivePusher.getMaxZoom()) {
+            try{
+                if(scaleFactor >= mAlivcLivePusher.getMaxZoom()) {
                     scaleFactor = mAlivcLivePusher.getMaxZoom();
                 }
-                mAlivcLivePusher.setZoom((int) scaleFactor);
+                mAlivcLivePusher.setZoom((int)scaleFactor);
 
             } catch (IllegalStateException e) {
 
@@ -467,18 +422,17 @@ public class LivePushActivity extends AppCompatActivity implements SensorEventLi
     SurfaceHolder.Callback mCallback = new SurfaceHolder.Callback() {
         @Override
         public void surfaceCreated(SurfaceHolder surfaceHolder) {
-            if (mSurfaceStatus == SurfaceStatus.UNINITED) {
+            if(mSurfaceStatus == SurfaceStatus.UNINITED) {
                 mSurfaceStatus = SurfaceStatus.CREATED;
-                if (mAlivcLivePusher != null) {
+                if(mAlivcLivePusher != null) {
                     try {
-                        if (mAsync) {
+                        if(mAsync) {
                             mAlivcLivePusher.startPreviewAysnc(mPreviewView);
                         } else {
                             mAlivcLivePusher.startPreview(mPreviewView);
                         }
-                        if (mAlivcLivePushConfig.isExternMainStream()) {
-//                            startYUV(getApplicationContext());
-                            startCustom();
+                        if(mAlivcLivePushConfig.isExternMainStream()) {
+                            startYUV(getApplicationContext());
                         }
                     } catch (IllegalArgumentException e) {
                         e.toString();
@@ -486,7 +440,7 @@ public class LivePushActivity extends AppCompatActivity implements SensorEventLi
                         e.toString();
                     }
                 }
-            } else if (mSurfaceStatus == SurfaceStatus.DESTROYED) {
+            } else if(mSurfaceStatus == SurfaceStatus.DESTROYED) {
                 mSurfaceStatus = SurfaceStatus.RECREATED;
             }
         }
@@ -494,7 +448,7 @@ public class LivePushActivity extends AppCompatActivity implements SensorEventLi
         @Override
         public void surfaceChanged(SurfaceHolder surfaceHolder, int i, int i1, int i2) {
             mSurfaceStatus = SurfaceStatus.CHANGED;
-            if (mLivePushFragment != null) {
+            if(mLivePushFragment != null) {
                 mLivePushFragment.setSurfaceView(mPreviewView);
             }
         }
@@ -504,8 +458,7 @@ public class LivePushActivity extends AppCompatActivity implements SensorEventLi
             mSurfaceStatus = SurfaceStatus.DESTROYED;
         }
     };
-
-    public static void startActivity(Activity activity, AlivcLivePushConfig alivcLivePushConfig, String url, boolean async, boolean audioOnly, boolean videoOnly, AlivcPreviewOrientationEnum orientation, int cameraId, boolean isFlash, String authTime, String privacyKey, boolean mixExtern, boolean mixMain) {
+    public static void startActivity(Activity activity, AlivcLivePushConfig alivcLivePushConfig, String url, boolean async, boolean audioOnly, boolean videoOnly, AlivcPreviewOrientationEnum orientation, int cameraId, boolean isFlash, String authTime, String privacyKey, boolean mixExtern, boolean mixMain,boolean ischecked,int fps) {
         Intent intent = new Intent(activity, LivePushActivity.class);
         Bundle bundle = new Bundle();
         bundle.putSerializable(AlivcLivePushConfig.CONFIG, alivcLivePushConfig);
@@ -520,6 +473,8 @@ public class LivePushActivity extends AppCompatActivity implements SensorEventLi
         bundle.putString(PRIVACY_KEY, privacyKey);
         bundle.putBoolean(MIX_EXTERN, mixExtern);
         bundle.putBoolean(MIX_MAIN, mixMain);
+        bundle.putBoolean(BEAUTY_CHECKED, ischecked);
+        bundle.putInt(FPS, fps);
         intent.putExtras(bundle);
         activity.startActivityForResult(intent, REQ_CODE_PUSH);
     }
@@ -528,10 +483,10 @@ public class LivePushActivity extends AppCompatActivity implements SensorEventLi
     protected void onResume() {
         super.onResume();
 
-        if (mAlivcLivePusher != null) {
+        if(mAlivcLivePusher != null) {
             try {
-                if (!isPause) {
-                    if (mAsync) {
+                if(!isPause) {
+                    if(mAsync) {
                         mAlivcLivePusher.resumeAsync();
                     } else {
                         mAlivcLivePusher.resume();
@@ -543,47 +498,33 @@ public class LivePushActivity extends AppCompatActivity implements SensorEventLi
                 e.printStackTrace();
             }
         }
-//        if(mViewPager.getCurrentItem() != 1) {
-//            mHandler.post(mRunnable);
-//        }
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        if (mAlivcLivePusher != null) {
+        if(mAlivcLivePusher != null) {
             try {
-                if (mAlivcLivePusher != null/*.isPushing()*/) {
+                if(mAlivcLivePusher != null/*.isPushing()*/) {
                     mAlivcLivePusher.pause();
                 }
             } catch (IllegalStateException e) {
                 e.printStackTrace();
             }
         }
-//        if(mHandler != null) {
-//            mHandler.removeCallbacks(mRunnable);
-//        }
     }
 
     @Override
     protected void onDestroy() {
         videoThreadOn = false;
         audioThreadOn = false;
-        if (mSensorManager != null) {
-            mSensorManager.unregisterListener(this);
-        }
-        if (mAlivcLivePusher != null) {
+        if(mAlivcLivePusher != null) {
             try {
                 mAlivcLivePusher.destroy();
             } catch (IllegalStateException e) {
                 e.printStackTrace();
             }
         }
-//        if(mHandler != null) {
-//            mHandler.removeCallbacks(mRunnable);
-//            mHandler = null;
-//        }
-//        unregisterReceiver(mChangedReceiver);
         mFragmentList = null;
         mPreviewView = null;
         mViewPager = null;
@@ -594,46 +535,35 @@ public class LivePushActivity extends AppCompatActivity implements SensorEventLi
         mPushTextStatsFragment = null;
         mPushDiagramStatsFragment = null;
         mAlivcLivePushConfig = null;
-
         mAlivcLivePusher = null;
-
-//        mHandler = null;
         alivcLivePushStatsInfo = null;
+        if (mSensorManager != null) {
+            mSensorManager.unregisterListener(this);
+        }
         super.onDestroy();
     }
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
-            float x = event.values[0];
-            float y = event.values[1];
-            if (Math.abs(x) > 3 || Math.abs(y) > 3) {
-                if (Math.abs(x) > Math.abs(y)) {
-                    if (mFURenderer != null) {
-                        mFURenderer.onDeviceOrientationChanged(x > 0 ? 270 : 90);
-                    }
-                    if (mCameraRenderer != null) {
-                        mCameraRenderer.getFURenderer().onDeviceOrientationChanged(x > 0 ? 270 : 90);
-                    }
-                } else {
-                    if (mFURenderer != null) {
-                        mFURenderer.onDeviceOrientationChanged(y > 0 ? 0 : 180);
-                    }
-                    if (mCameraRenderer != null) {
-                        mCameraRenderer.getFURenderer().onDeviceOrientationChanged(y > 0 ? 0 : 180);
-                    }
-                }
+        float x = event.values[0];
+        float y = event.values[1];
+        if (Math.abs(x) > 3 || Math.abs(y) > 3) {
+            if (Math.abs(x) > Math.abs(y)) {
+                mFURenderer.setDeviceOrientation(x > 0 ? 0 : 180);
+            } else {
+                mFURenderer.setDeviceOrientation(y > 0 ? 90 : 270);
             }
         }
     }
 
     @Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy) {}
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+    }
 
     public class FragmentAdapter extends FragmentPagerAdapter {
 
         List<Fragment> fragmentList = new ArrayList<>();
-
         public FragmentAdapter(FragmentManager fm, List<Fragment> fragmentList) {
             super(fm);
             this.fragmentList = fragmentList;
@@ -656,7 +586,7 @@ public class LivePushActivity extends AppCompatActivity implements SensorEventLi
         super.onConfigurationChanged(newConfig);
         int rotation = getWindowManager().getDefaultDisplay().getRotation();
         AlivcPreviewOrientationEnum orientationEnum;
-        if (mAlivcLivePusher != null) {
+        if(mAlivcLivePusher != null) {
             switch (rotation) {
                 case Surface.ROTATION_0:
                     orientationEnum = ORIENTATION_PORTRAIT;
@@ -673,8 +603,9 @@ public class LivePushActivity extends AppCompatActivity implements SensorEventLi
             }
             try {
                 mAlivcLivePusher.setPreviewOrientation(orientationEnum);
-            } catch (IllegalStateException e) {
-
+            } catch (IllegalStateException e)
+            {
+                
             }
         }
     }
@@ -700,36 +631,6 @@ public class LivePushActivity extends AppCompatActivity implements SensorEventLi
         dialog.show();
     }
 
-    private Runnable mRunnable = new Runnable() {
-        @Override
-        public void run() {
-            LogUtil.d(TAG, "====== mRunnable run ======");
-
-            new AsyncTask<AlivcLivePushStatsInfo, Void, AlivcLivePushStatsInfo>() {
-                @Override
-                protected AlivcLivePushStatsInfo doInBackground(AlivcLivePushStatsInfo... alivcLivePushStatsInfos) {
-                    try {
-                        alivcLivePushStatsInfo = mAlivcLivePusher.getLivePushStatsInfo();
-                    } catch (IllegalStateException e) {
-
-                    }
-                    return alivcLivePushStatsInfo;
-                }
-
-                @Override
-                protected void onPostExecute(AlivcLivePushStatsInfo alivcLivePushStatsInfo) {
-                    super.onPostExecute(alivcLivePushStatsInfo);
-                    if (mPushTextStatsFragment != null && mViewPager.getCurrentItem() == 0) {
-                        mPushTextStatsFragment.updateValue(alivcLivePushStatsInfo);
-                    } else if (mPushDiagramStatsFragment != null && mViewPager.getCurrentItem() == 2) {
-                        mPushDiagramStatsFragment.updateValue(alivcLivePushStatsInfo);
-                    }
-//                    mHandler.postDelayed(mRunnable, REFRESH_INTERVAL);
-                }
-            }.execute();
-        }
-    };
-
     public interface PauseState {
         void updatePause(boolean state);
     }
@@ -747,10 +648,10 @@ public class LivePushActivity extends AppCompatActivity implements SensorEventLi
 
             if (intent.getAction().equals(ConnectivityManager.CONNECTIVITY_ACTION)) {
 
-                if (mNetWork != NetWorkUtils.getAPNType(context)) {
+                if(mNetWork != NetWorkUtils.getAPNType(context)) {
                     mNetWork = NetWorkUtils.getAPNType(context);
-                    if (mAlivcLivePusher != null) {
-                        if (mAlivcLivePusher.isPushing()) {
+                    if(mAlivcLivePusher != null) {
+                        if(mAlivcLivePusher.isPushing()) {
                             try {
                                 mAlivcLivePusher.reconnectPushAsync(null);
                             } catch (IllegalStateException e) {
@@ -768,10 +669,9 @@ public class LivePushActivity extends AppCompatActivity implements SensorEventLi
         new ScheduledThreadPoolExecutor(1, new ThreadFactory() {
             private AtomicInteger atoInteger = new AtomicInteger(0);
 
-            @Override
             public Thread newThread(Runnable r) {
                 Thread t = new Thread(r);
-                t.setName("LivePushActivity-readYUV-Thread" + atoInteger.getAndIncrement());
+                t.setName("LivePushActivity-readYUV-Thread"+ atoInteger.getAndIncrement());
                 return t;
             }
         }).execute(new Runnable() {
@@ -786,13 +686,14 @@ public class LivePushActivity extends AppCompatActivity implements SensorEventLi
                 byte[] yuv;
                 InputStream myInput = null;
                 try {
-                    File f = new File(Environment.getExternalStorageDirectory().getPath() + File.separator + "alivc_resource/capture0.yuv");
+                    File f = new File(getFilesDir().getPath() + File.separator+"alivc_resource/capture0.yuv");
                     myInput = new FileInputStream(f);
-                    byte[] buffer = new byte[1280 * 720 * 3 / 2];
+                    byte[] buffer = new byte[1280*720*3/2];
                     int length = myInput.read(buffer);
                     //发数据
-                    while (length > 0 && videoThreadOn) {
-                        mAlivcLivePusher.inputStreamVideoData(buffer, 720, 1280, 720, 1280 * 720 * 3 / 2, System.nanoTime() / 1000, 0);
+                    while(length > 0 && videoThreadOn)
+                    {
+                        mAlivcLivePusher.inputStreamVideoData(buffer,720,1280,720,1280*720*3/2,System.nanoTime()/1000,0);
                         try {
                             Thread.sleep(40);
                         } catch (InterruptedException e) {
@@ -800,7 +701,8 @@ public class LivePushActivity extends AppCompatActivity implements SensorEventLi
                         }
                         //发数据
                         length = myInput.read(buffer);
-                        if (length <= 0) {
+                        if(length <= 0)
+                        {
                             myInput.close();
                             myInput = new FileInputStream(f);
                             length = myInput.read(buffer);
@@ -815,39 +717,6 @@ public class LivePushActivity extends AppCompatActivity implements SensorEventLi
         });
     }
 
-    public void startCustom() {
-        FURenderer.setup(this);
-        mCameraRenderer = new CameraRenderer(this, new FURenderer.OnDebugListener() {
-            @Override
-            public void onFpsChanged(double fps, double callTime) {
-                final String FPS = String.format(Locale.getDefault(), "%.2f", fps);
-                Log.e(TAG, "onFpsChanged: FPS " + FPS + " callTime " + String.format(Locale.getDefault(), "%.2f", callTime));
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (mTvFps != null) {
-                            mTvFps.setText("FPS: " + FPS);
-                        }
-                    }
-                });
-            }
-        }, mAlivcLivePusher);
-
-        mCameraRenderer.onResume();
-        FaceUnityView beautyControlView = findViewById(R.id.faceunity_control_view);
-        beautyControlView.setModuleManager(mCameraRenderer.getFURenderer());
-        beautyControlView.setVisibility(View.VISIBLE);
-    }
-
-    @Override
-    public void finish() {
-        super.finish();
-        if (mCameraRenderer != null) {
-            mCameraRenderer.onPause();
-        }
-
-    }
-
     private void stopYUV() {
         videoThreadOn = false;
     }
@@ -857,4 +726,41 @@ public class LivePushActivity extends AppCompatActivity implements SensorEventLi
     }
 
 
+    public static String getFilePath(Context context, String dir) {
+        String logFilePath = "";
+        //判断SD卡是否可用
+        if (MEDIA_MOUNTED.equals(Environment.getExternalStorageState()) ) {
+            logFilePath = context.getExternalFilesDir(dir).getAbsolutePath() ;
+        }else{
+            //没内存卡就存机身内存 
+            logFilePath = context.getFilesDir() + File.separator + dir;
+        }
+        File file = new File(logFilePath);
+        if(!file.exists()){//判断文件目录是否存在 
+            file.mkdirs();
+        }
+
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        String logFileName = "live_pusher_" + sdf.format(new Date()) + "_" + String.valueOf(System.currentTimeMillis()) + ".log";
+        logFilePath += File.separator + logFileName;
+
+        LogUtil.d("log filePath====>" + logFilePath);
+        return logFilePath;
+    }
+
+    private void initCsvUtil(Context context) {
+        mCSVUtils = new CSVUtils(context);
+        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.getDefault());
+        String dateStrDir = format.format(new Date(System.currentTimeMillis()));
+        dateStrDir = dateStrDir.replaceAll("-", "").replaceAll("_", "");
+        SimpleDateFormat df = new SimpleDateFormat("yyyyMMddHHmmssSSS", Locale.getDefault());
+        String dateStrFile = df.format(new Date());
+        String filePath = Constant.filePath + dateStrDir + File.separator + "excel-" + dateStrFile + ".csv";
+        Log.d(TAG, "initLog: CSV file path:" + filePath);
+        StringBuilder headerInfo = new StringBuilder();
+        headerInfo.append("version：").append(FURenderer.getInstance().getVersion()).append(CSVUtils.COMMA)
+                .append("机型：").append(android.os.Build.MANUFACTURER).append(android.os.Build.MODEL)
+                .append("处理方式：Texture").append(CSVUtils.COMMA);
+        mCSVUtils.initHeader(filePath, headerInfo);
+    }
 }
