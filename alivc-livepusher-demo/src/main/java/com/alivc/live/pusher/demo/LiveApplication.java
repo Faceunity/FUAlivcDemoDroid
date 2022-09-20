@@ -1,20 +1,18 @@
 package com.alivc.live.pusher.demo;
 
-import android.app.Application;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.ConnectivityManager;
 
+import androidx.multidex.MultiDexApplication;
+
 import com.alivc.live.pusher.LogUtil;
 
-//import com.squareup.leakcanary.LeakCanary;
-
-public class LiveApplication extends Application {
+public class LiveApplication extends MultiDexApplication {
 
     public static Context sContext;
-    private static LiveApplication liveApplication;
 
     @Override
     protected void attachBaseContext(Context base) {
@@ -25,21 +23,16 @@ public class LiveApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-        liveApplication = this;
-
         IntentFilter filter = new IntentFilter();
         filter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
         registerReceiver(new ConnectivityChangedReceiver(), filter);
-        if (BuildConfig.DEBUG) {
-            LogUtil.enalbeDebug();
+        if(BuildConfig.DEBUG) {
+            LogUtil.enableDebug();
         } else {
             LogUtil.disableDebug();
         }
-//        if (LeakCanary.isInAnalyzerProcess(this)) {
-//            return;
-//        }
-//        LeakCanary.install(this);
     }
+
 
 
     class ConnectivityChangedReceiver extends BroadcastReceiver {
@@ -47,10 +40,6 @@ public class LiveApplication extends Application {
         public void onReceive(Context context, Intent intent) {
 
         }
-    }
-
-    public static LiveApplication getInstance() {
-        return liveApplication;
     }
 
 }

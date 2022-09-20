@@ -4,5 +4,5 @@
     <size android:height="30dp"
         android:width="60dp"/>
     <corners android:radius="15dp" />
-    <gradient android:height="30dp" android:startColor="@color/trackOnColor" android:endColor="@color/trackOnColor"/>
+    <gradient android:height="30dp" android:startColor="@color/switch_bar_on_color" android:endColor="@color/switch_bar_on_color"/>
 </shape>

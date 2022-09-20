@@ -2,83 +2,113 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/darker_gray"
+    android:background="@color/wheel_white"
     android:orientation="vertical">
 
     <LinearLayout
         android:layout_height="wrap_content"
         android:layout_width="match_parent"
         android:orientation="vertical"
-        android:padding="10dp">
-        <LinearLayout
-            android:layout_height="60dp"
+        android:layout_marginTop="15dp">
+
+        <RelativeLayout
             android:layout_width="match_parent"
-            android:orientation="horizontal"
-            android:padding="5dp"
-            android:gravity="center_vertical">
+            android:layout_height="40dp"
+            android:layout_marginLeft="16dp"
+            android:layout_marginTop="14dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
             <TextView
-                android:layout_width="80dp"
+                android:layout_width="100dp"
                 android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"
                 android:text="@string/target_bitrate"
                 android:textColor="@android:color/black"
                 android:textSize="@dimen/font_size_28px" />
 
-            <EditText
-                android:id="@+id/target_rate_edit"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:background="@drawable/shape_rect_gray"
-                android:paddingLeft="10dp"
-                android:inputType="number"
-                android:textColorHint="@android:color/darker_gray"
-                android:textSize="@dimen/font_size_28px" />
             <TextView
+                android:id="@+id/kb_desc"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginLeft="10dp"
-                android:text="KB"/>
-        </LinearLayout>
+                android:layout_alignParentRight="true"
+                android:layout_marginLeft="5dp"
+                android:layout_marginTop="10dp"
+                android:layout_marginRight="16dp"
+                android:text="/kbps" />
 
-        <LinearLayout
-            android:layout_height="60dp"
+            <EditText
+                android:id="@+id/target_rate_edit"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_toLeftOf="@id/kb_desc"
+                android:background="@color/wheel_white"
+                android:hint="@string/target_rate_value"
+                android:inputType="number"
+                android:paddingLeft="10dp"
+                android:textColorHint="@android:color/darker_gray"
+                android:textSize="@dimen/font_size_28px" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0.5dp"
+                android:layout_alignParentBottom="true"
+                android:layout_marginTop="5dp"
+                android:background="@color/alivc_color_gry"></View>
+        </RelativeLayout>
+        <RelativeLayout
             android:layout_width="match_parent"
-            android:orientation="horizontal"
-            android:padding="5dp"
-            android:gravity="center_vertical">
+            android:layout_height="40dp"
+            android:layout_marginLeft="16dp"
+            android:layout_marginTop="14dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
             <TextView
-                android:layout_width="80dp"
+                android:layout_width="100dp"
                 android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"
                 android:text="@string/min_bitrate"
                 android:textColor="@android:color/black"
                 android:textSize="@dimen/font_size_28px" />
 
+            <TextView
+                android:id="@+id/min_kb_desc"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentRight="true"
+                android:layout_marginLeft="5dp"
+                android:layout_marginTop="10dp"
+                android:layout_marginRight="16dp"
+                android:text="/kbps" />
+
             <EditText
                 android:id="@+id/min_rate_edit"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:background="@drawable/shape_rect_gray"
-                android:paddingLeft="10dp"
+                android:layout_toLeftOf="@id/min_kb_desc"
+                android:background="@color/wheel_white"
+                android:hint="@string/min_rate_value"
                 android:inputType="number"
+                android:paddingLeft="10dp"
                 android:textColorHint="@android:color/darker_gray"
                 android:textSize="@dimen/font_size_28px" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginLeft="10dp"
-                android:text="KB"/>
-        </LinearLayout>
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0.5dp"
+                android:layout_alignParentBottom="true"
+                android:layout_marginTop="5dp"
+                android:background="@color/alivc_color_gry"></View>
+        </RelativeLayout>
     </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="20dp"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:visibility="gone">
         <Button
             android:id="@+id/share"
             android:layout_height="match_parent"
@@ -126,117 +156,137 @@
         </LinearLayout>
     </LinearLayout>
 
-    <LinearLayout
+
+    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="10dp">
-        <LinearLayout
-            android:layout_height="match_parent"
+        android:layout_height="40dp"
+        android:layout_marginLeft="16dp"
+        android:layout_marginTop="10dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="100dp"
+            android:layout_marginTop="3dp"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="10dp"
+            android:text="@string/setting_push_mirror"
+            android:textColor="@android:color/black"
+            android:textSize="@dimen/font_size_28px" />
+
+        <Switch
+            android:id="@+id/push_mirror_switch"
             android:layout_width="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center">
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:checked="false"
+            android:textOff=""
+            android:textOn=""
+            android:layout_marginRight="16dp"
+            android:thumb="@drawable/thumb"
+            android:track="@drawable/track" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginRight="10dp"
-                android:text="@string/setting_pre_mirror"
-                android:textColor="@android:color/black"
-                android:textSize="@dimen/font_size_28px" />
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:layout_alignParentBottom="true"
+            android:layout_marginTop="5dp"
+            android:background="@color/alivc_color_gry"></View>
+    </RelativeLayout>
 
-            <Switch
-                android:id="@+id/preview_mirror_switch"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textOff=""
-                android:textOn=""
-                android:thumb="@drawable/thumb"
-                android:track="@drawable/track"
-                android:checked="false"/>
-        </LinearLayout>
-        <LinearLayout
-            android:layout_height="match_parent"
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:layout_marginLeft="16dp"
+        android:layout_marginTop="10dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="100dp"
+            android:layout_marginTop="3dp"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="10dp"
+            android:text="@string/setting_pre_mirror"
+            android:textColor="@android:color/black"
+            android:textSize="@dimen/font_size_28px" />
+
+        <Switch
+            android:id="@+id/preview_mirror_switch"
             android:layout_width="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center">
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:checked="false"
+            android:textOff=""
+            android:textOn=""
+            android:layout_marginRight="16dp"
+            android:thumb="@drawable/thumb"
+            android:track="@drawable/track" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginRight="10dp"
-                android:text="@string/setting_push_mirror"
-                android:textColor="@android:color/black"
-                android:textSize="@dimen/font_size_28px" />
-
-            <Switch
-                android:id="@+id/push_mirror_switch"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textOff=""
-                android:textOn=""
-                android:thumb="@drawable/thumb"
-                android:track="@drawable/track"
-                android:checked="false"/>
-        </LinearLayout>
-    </LinearLayout>
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0.5dp"
+            android:layout_alignParentBottom="true"
+            android:layout_marginTop="5dp"
+            android:background="@color/alivc_color_gry"></View>
+    </RelativeLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="40dp"
-        android:paddingRight="10dp"
-        android:paddingLeft="10dp"
-        android:layout_marginTop="20dp"
+        android:layout_marginLeft="16dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginRight="16dp"
         android:orientation="horizontal">
-        <TextView android:layout_width="wrap_content"
+
+        <TextView
+            android:layout_width="wrap_content"
             android:layout_height="match_parent"
+            android:layout_marginTop="5dp"
             android:layout_marginRight="10dp"
-            android:gravity="center"
-            android:textSize="@dimen/font_size_28px"
+            android:text="@string/landscape_model"
             android:textColor="@android:color/black"
-            android:text="@string/display_mode" />
+            android:textSize="@dimen/font_size_28px" />
+
         <RadioGroup
             android:id="@+id/setting_display_mode"
             android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="30dp"
             android:orientation="horizontal">
 
             <RadioButton
                 android:id="@+id/full"
-                android:background="@drawable/left_shape_selector"
-                android:padding="10dp"
-                android:gravity="center_horizontal"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_weight="2"
-                android:textSize="@dimen/font_size_28px"
+                android:background="@drawable/left_shape_selector"
                 android:button="@null"
-                android:text="@string/display_mode_full" />
+                android:gravity="center"
+                android:text="@string/display_mode_full"
+                android:textSize="@dimen/font_size_28px" />
 
             <RadioButton
                 android:id="@+id/fit"
-                android:background="@drawable/middle_shape_selector"
-                android:padding="10dp"
-                android:gravity="center_horizontal"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_weight="2"
+                android:background="@drawable/middle_shape_selector"
                 android:button="@null"
-                android:checked="true"
-                android:textSize="@dimen/font_size_28px"
-                android:text="@string/display_mode_fit" />
+                android:gravity="center"
+                android:text="@string/display_mode_fit"
+                android:textSize="@dimen/font_size_28px" />
 
             <RadioButton
                 android:id="@+id/cut"
-                android:background="@drawable/right_shape_selector"
-                android:padding="10dp"
-                android:gravity="center_horizontal"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_weight="2"
+                android:background="@drawable/right_shape_selector"
                 android:button="@null"
-                android:textSize="@dimen/font_size_28px"
-                android:text="@string/display_mode_cut" />
+                android:gravity="center"
+                android:checked="true"
+                android:text="@string/display_mode_cut"
+                android:textSize="@dimen/font_size_28px" />
 
         </RadioGroup>
     </LinearLayout>

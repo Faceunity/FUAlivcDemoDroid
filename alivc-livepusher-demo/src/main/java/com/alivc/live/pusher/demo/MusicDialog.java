@@ -2,10 +2,12 @@ package com.alivc.live.pusher.demo;
 
 import android.content.DialogInterface;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
-import android.support.v4.app.DialogFragment;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
+
+import androidx.annotation.Nullable;
+import androidx.fragment.app.DialogFragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import android.util.DisplayMetrics;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -13,9 +15,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.SeekBar;
+import android.widget.Switch;
 import android.widget.TextView;
-
 import com.alivc.live.pusher.AlivcLivePusher;
 
 public class MusicDialog extends DialogFragment implements View.OnClickListener {
@@ -24,8 +27,8 @@ public class MusicDialog extends DialogFragment implements View.OnClickListener 
     private Button mStop;
     private Button mLoop;
     private Button mMute;
-    private Button mEarsBack;
-    private Button mAudioDenoise;
+    private Switch mEarsBack;
+    private Switch mAudioDenoise;
 
     private TextView mAccompanimentText;
     private SeekBar mAccompanimentBar;
@@ -68,7 +71,6 @@ public class MusicDialog extends DialogFragment implements View.OnClickListener 
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-//        getDialog().getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         View view = inflater.inflate(R.layout.push_music, container);
         mPause = (Button) view.findViewById(R.id.pause);
         mPause.setSelected(isPause);
@@ -82,26 +84,21 @@ public class MusicDialog extends DialogFragment implements View.OnClickListener 
         mMute = (Button) view.findViewById(R.id.mute);
         mMute.setSelected(isMute);
         mMute.setText(isMute ? getString(R.string.close_mute) : getString(R.string.open_mute));
-        mEarsBack = (Button) view.findViewById(R.id.ears_back);
-        mEarsBack.setSelected(isEarsBack);
-        mEarsBack.setText(isEarsBack ? getString(R.string.close_ears_back) : getString(R.string.open_ears_back));
-        mAudioDenoise = (Button) view.findViewById(R.id.audio_denoise);
-        mAudioDenoise.setSelected(isAudioDenoise);
-        mAudioDenoise.setText(isAudioDenoise ? getString(R.string.close_audio_denoise) : getString(R.string.open_audio_denoise));
-
+        mEarsBack = (Switch) view.findViewById(R.id.ears_back);
+        mEarsBack.setOnCheckedChangeListener(onCheckedChangeListener);
+        mAudioDenoise = (Switch) view.findViewById(R.id.audio_denoise);
         mPause.setOnClickListener(this);
         mStop.setOnClickListener(this);
         mLoop.setOnClickListener(this);
         mMute.setOnClickListener(this);
-        mEarsBack.setOnClickListener(this);
-        mAudioDenoise.setOnClickListener(this);
+        mAudioDenoise.setOnCheckedChangeListener(onCheckedChangeListener);
         mAccompanimentText = (TextView) view.findViewById(R.id.accompaniment_text);
         mAccompanimentBar = (SeekBar) view.findViewById(R.id.accompaniment_seekbar);
         mVoiceText = (TextView) view.findViewById(R.id.voice_text);
         mVoiceBar = (SeekBar) view.findViewById(R.id.voice_seekbar);
 
         mMusicRecyclerView = (RecyclerView) view.findViewById(R.id.music_list);
-        if(mMusicAdapter == null) {
+        if (mMusicAdapter == null) {
             mMusicAdapter = new MusicAdapter(getActivity());
             mMusicAdapter.setOnItemClick(mOnItemClick);
             mMusicAdapter.startDefaultMusic();
@@ -129,7 +126,7 @@ public class MusicDialog extends DialogFragment implements View.OnClickListener 
         WindowManager.LayoutParams p = getDialog().getWindow().getAttributes();
 
         p.width = dpMetrics.widthPixels;
-        p.height = dpMetrics.heightPixels / 2;
+        p.height = (int) ((dpMetrics.heightPixels / 2)*1.5);
         getDialog().getWindow().setAttributes(p);
     }
 
@@ -141,17 +138,17 @@ public class MusicDialog extends DialogFragment implements View.OnClickListener 
     @Override
     public void onClick(View view) {
         int id = view.getId();
-        if(mAlivcLivePusher == null) {
+        if (mAlivcLivePusher == null) {
             return;
         }
         try {
-            switch(id) {
+            switch (id) {
                 case R.id.pause:
                     boolean pauseSelected = mPause.isSelected();
                     mPause.setText(pauseSelected ? getString(R.string.resume) : getString(R.string.pause));
                     mPause.setSelected(!pauseSelected);
                     isPause = !pauseSelected;
-                    if(!pauseSelected) {
+                    if (!pauseSelected) {
                         mAlivcLivePusher.resumeBGM();
                     } else {
                         mAlivcLivePusher.pauseBGM();
@@ -166,7 +163,7 @@ public class MusicDialog extends DialogFragment implements View.OnClickListener 
                     mPause.setEnabled(isStop);
                     mPause.setText(getString(R.string.pause));
                     mPause.setSelected(true);
-                    if(!stopSelected) {
+                    if (!stopSelected) {
                         mAlivcLivePusher.startBGMAsync(mMusicInfo.getPath());
                     } else {
                         mAlivcLivePusher.stopBGMAsync();
@@ -178,14 +175,14 @@ public class MusicDialog extends DialogFragment implements View.OnClickListener 
                     mLoop.setText(loopSelected ? getString(R.string.open_loop) : getString(R.string.close_loop));
                     mLoop.setSelected(!loopSelected);
                     isLoop = !loopSelected;
-                    if(mMusicAdapter != null) {
+                    if (mMusicAdapter != null) {
                         mMusicAdapter.updateItemView((MusicAdapter.MusicViewHolder) mMusicRecyclerView.findViewHolderForAdapterPosition(mPosition), mPosition, !loopSelected);
                     }
                     break;
                 case R.id.mute:
                     boolean isSelect = mMute.isSelected();
                     mAlivcLivePusher.setMute(!isSelect);
-                    if(mPosition == 0) {
+                    if (mPosition == 0) {
                         mAccompanimentBar.setEnabled(false);
                         mVoiceBar.setEnabled(true);
                     } else {
@@ -222,13 +219,13 @@ public class MusicDialog extends DialogFragment implements View.OnClickListener 
     private SeekBar.OnSeekBarChangeListener onSeekBarChangeListener = new SeekBar.OnSeekBarChangeListener() {
         @Override
         public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-            try{
+            try {
                 int seekBarId = seekBar.getId();
 
-                if(mAccompanimentBar.getId() == seekBarId) {
+                if (mAccompanimentBar.getId() == seekBarId) {
                     mAccompanimentText.setText(String.valueOf(progress));
                     mAlivcLivePusher.setBGMVolume(progress);
-                } else if(mVoiceBar.getId() == seekBarId) {
+                } else if (mVoiceBar.getId() == seekBarId) {
                     mVoiceText.setText(String.valueOf(progress));
                     mAlivcLivePusher.setCaptureVolume(progress);
                 }
@@ -265,7 +262,7 @@ public class MusicDialog extends DialogFragment implements View.OnClickListener 
             mMusicInfo = musicInfo;
             mPosition = position;
             updateButtonState(position > 0 ? true : false);
-            if(musicInfo.getPath() != null && !musicInfo.getPath().isEmpty()) {
+            if (musicInfo.getPath() != null && !musicInfo.getPath().isEmpty()) {
                 startBGMAsync(musicInfo.getPath());
             } else {
                 try {
@@ -283,7 +280,7 @@ public class MusicDialog extends DialogFragment implements View.OnClickListener 
         mLoop.setEnabled(bool);
 //        mMute.setEnabled(bool);
 
-        if(mPosition == 0) {
+        if (mPosition == 0) {
             mAccompanimentBar.setEnabled(mMute.isSelected());
             mVoiceBar.setEnabled(!mMute.isSelected());
         } else {
@@ -301,13 +298,13 @@ public class MusicDialog extends DialogFragment implements View.OnClickListener 
     }
 
     public void updateProgress(long progress, long totalTime) {
-        if(mMusicAdapter != null) {
+        if (mMusicAdapter != null) {
             mMusicAdapter.updateProgress((MusicAdapter.MusicViewHolder) mMusicRecyclerView.findViewHolderForAdapterPosition(mPosition), progress, totalTime);
         }
     }
 
     private void startBGMAsync(String path) {
-        if(mAlivcLivePusher != null) {
+        if (mAlivcLivePusher != null) {
             try {
                 mAlivcLivePusher.startBGMAsync(path);
             } catch (IllegalStateException e) {
@@ -316,4 +313,15 @@ public class MusicDialog extends DialogFragment implements View.OnClickListener 
         }
     }
 
+    private CompoundButton.OnCheckedChangeListener onCheckedChangeListener = new CompoundButton.OnCheckedChangeListener() {
+        @Override
+        public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+            int id = buttonView.getId();
+            if (id == R.id.ears_back) {
+                mAlivcLivePusher.setBGMEarsBack(isChecked);
+            } else if (id == R.id.audio_denoise) {
+                mAlivcLivePusher.setAudioDenoise(isChecked);
+            }
+        }
+    };
 }

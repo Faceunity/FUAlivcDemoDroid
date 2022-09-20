@@ -8,6 +8,7 @@ import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
@@ -16,10 +17,13 @@ import android.media.projection.MediaProjectionManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
-import android.support.annotation.NonNull;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AppCompatActivity;
+import android.os.Handler;
+import android.os.Looper;
+import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
 import android.view.MotionEvent;
 import android.view.OrientationEventListener;
 import android.view.Surface;
@@ -31,13 +35,19 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RadioGroup;
+import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.acker.simplezxing.activity.CaptureActivity;
+import com.alivc.live.pusher.AlivcLiveBase;
 import com.alivc.live.pusher.AlivcLivePushConfig;
+import com.alivc.live.pusher.AlivcLivePushError;
+import com.alivc.live.pusher.AlivcLivePushErrorListener;
 import com.alivc.live.pusher.AlivcLivePushInfoListener;
+import com.alivc.live.pusher.AlivcLivePushLogLevel;
+import com.alivc.live.pusher.AlivcLivePushStatsInfo;
 import com.alivc.live.pusher.AlivcLivePusher;
 import com.alivc.live.pusher.AlivcPreviewOrientationEnum;
 import com.alivc.live.pusher.AlivcResolutionEnum;
@@ -51,6 +61,7 @@ import java.util.List;
 import static com.alivc.live.pusher.AlivcPreviewOrientationEnum.ORIENTATION_LANDSCAPE_HOME_LEFT;
 import static com.alivc.live.pusher.AlivcPreviewOrientationEnum.ORIENTATION_LANDSCAPE_HOME_RIGHT;
 import static com.alivc.live.pusher.AlivcPreviewOrientationEnum.ORIENTATION_PORTRAIT;
+import static com.alivc.live.pusher.demo.LivePushActivity.getFilePath;
 
 public class VideoRecordConfigActivity extends AppCompatActivity {
     private static final String TAG = "VideoRecordConfigActivity";
@@ -81,13 +92,12 @@ public class VideoRecordConfigActivity extends AppCompatActivity {
 
     private EditText mUrl;
     private ImageView mQr;
-    private ImageView mCopy;
     private ImageView mBack;
 
     private TextView mPushTex;
     private RadioGroup mOrientation;
     private TextView mNoteText;
-    private LinearLayout mNoteLinear;
+    private RelativeLayout mNoteLinear;
 
     private AlivcLivePushConfig mAlivcLivePushConfig;
     private AlivcPreviewOrientationEnum mOrientationEnum = ORIENTATION_PORTRAIT;
@@ -101,6 +111,7 @@ public class VideoRecordConfigActivity extends AppCompatActivity {
 
     private int mLastRotation;
     private ClipboardManager cm = null;
+    private boolean mIsStartPushing = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -111,11 +122,11 @@ public class VideoRecordConfigActivity extends AppCompatActivity {
         mAlivcLivePushConfig = new AlivcLivePushConfig();
         if(mAlivcLivePushConfig.getPreviewOrientation() == AlivcPreviewOrientationEnum.ORIENTATION_LANDSCAPE_HOME_RIGHT.getOrientation() || mAlivcLivePushConfig.getPreviewOrientation() == AlivcPreviewOrientationEnum.ORIENTATION_LANDSCAPE_HOME_LEFT.getOrientation())
         {
-            mAlivcLivePushConfig.setNetworkPoorPushImage(Environment.getExternalStorageDirectory().getPath() + File.separator + "alivc_resource/poor_network_land.png");
-            mAlivcLivePushConfig.setPausePushImage(Environment.getExternalStorageDirectory().getPath() + File.separator + "alivc_resource/background_push_land.png");
+            mAlivcLivePushConfig.setNetworkPoorPushImage(getFilesDir().getPath() + File.separator + "alivc_resource/poor_network_land.png");
+            mAlivcLivePushConfig.setPausePushImage(getFilesDir().getPath() + File.separator + "alivc_resource/background_push_land.png");
         } else {
-            mAlivcLivePushConfig.setNetworkPoorPushImage(Environment.getExternalStorageDirectory().getPath() + File.separator + "alivc_resource/poor_network.png");
-            mAlivcLivePushConfig.setPausePushImage(Environment.getExternalStorageDirectory().getPath() + File.separator + "alivc_resource/background_push.png");
+            mAlivcLivePushConfig.setNetworkPoorPushImage(getFilesDir().getPath() + File.separator + "alivc_resource/poor_network.png");
+            mAlivcLivePushConfig.setPausePushImage(getFilesDir().getPath() + File.separator + "alivc_resource/background_push.png");
         }
         AlivcLivePushConfig.setMediaProjectionPermissionResultData(null);
         initView();
@@ -201,12 +212,14 @@ public class VideoRecordConfigActivity extends AppCompatActivity {
         mMicVolumeText = (TextView) findViewById(R.id.mic_text);
         mOrientation = (RadioGroup) findViewById(R.id.main_orientation);
         mQr = (ImageView) findViewById(R.id.qr_code);
-        mCopy = (ImageView) findViewById(R.id.copy_paste);
         mBack = (ImageView) findViewById(R.id.iv_back);
-        mNoteLinear = (LinearLayout) findViewById(R.id.note_linear);
+        mNoteLinear = (RelativeLayout) findViewById(R.id.note_linear);
         mNoteText = (TextView) findViewById(R.id.note_text);
 
-        mUrl.setText(PushAuth.wrapAuthUrl());
+        String initUrl = FastTestPushOrPlayerData.getTestPushUrl();
+        if (!initUrl.isEmpty()) {
+            mUrl.setText(initUrl);
+        }
     }
 
     private void setClick() {
@@ -214,7 +227,6 @@ public class VideoRecordConfigActivity extends AppCompatActivity {
         mResolution.setOnSeekBarChangeListener(onSeekBarChangeListener);
         mMicVolume.setOnSeekBarChangeListener(onSeekBarChangeListener);
         mQr.setOnClickListener(onClickListener);
-        mCopy.setOnClickListener(onClickListener);
         mBack.setOnClickListener(onClickListener);
         mOrientation.setOnCheckedChangeListener(mOrientationListener);
     }
@@ -225,14 +237,31 @@ public class VideoRecordConfigActivity extends AppCompatActivity {
             int id = view.getId();
             switch (id) {
                 case R.id.beginPublish:
+                        if(mIsStartPushing) {
+                            return;
+                        }
+                        mIsStartPushing = true;
+
                         if (getPushConfig() != null) {
                             if (mAlivcLivePusher == null) {
                                 //if(VideoRecordViewManager.permission(getApplicationContext()))
                                 if(FloatWindowManager.getInstance().applyFloatWindow(VideoRecordConfigActivity.this))
                                 {
+                                    Intent intent = new Intent(VideoRecordConfigActivity.this, ForegroundService.class);
+                                    startService(intent);
+
                                     startScreenCapture();
                                 }
                             } else {
+                                view.postDelayed(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        mIsStartPushing = false;
+                                    }
+                                },1000);
+                                Intent intent = new Intent(VideoRecordConfigActivity.this, ForegroundService.class);
+                                stopService(intent);
+
                                 stopPushWithoutSurface();
                             }
                         }
@@ -249,17 +278,6 @@ public class VideoRecordConfigActivity extends AppCompatActivity {
                 case R.id.iv_back:
                     finish();
                     break;
-                case R.id.copy_paste:
-                    if(cm != null) {
-                        if(mUrl.getText().toString() != null && mUrl.getText().toString().startsWith("rtmp://push-demo-rtmp.aliyunlive.com/test/stream")) {
-                            ClipData mClipData = ClipData.newPlainText("Label", "rtmp://push-demo.aliyunlive.com/test/stream"+mUrl.getText().toString().substring(48,mUrl.getText().length()));
-                            cm.setPrimaryClip(mClipData);
-                            Toast.makeText(getApplicationContext(),R.string.promt_copy_url, Toast.LENGTH_LONG).show();
-                        } else {
-                            Toast.makeText(getApplicationContext(),R.string.promt_copy_customized_url, Toast.LENGTH_LONG).show();
-                        }
-                    }
-                    break;     
                 default:
                     break;
             }
@@ -335,8 +353,8 @@ public class VideoRecordConfigActivity extends AppCompatActivity {
                     if (mAlivcLivePushConfig != null) {
                         mAlivcLivePushConfig.setPreviewOrientation(ORIENTATION_PORTRAIT);
                         mOrientationEnum = ORIENTATION_PORTRAIT;
-                        mAlivcLivePushConfig.setPausePushImage(Environment.getExternalStorageDirectory().getPath() + File.separator + "alivc_resource/background_push.png");
-                        mAlivcLivePushConfig.setNetworkPoorPushImage(Environment.getExternalStorageDirectory().getPath() + File.separator + "alivc_resource/poor_network.png");
+                        mAlivcLivePushConfig.setPausePushImage(getFilesDir().getPath() + File.separator + "alivc_resource/background_push.png");
+                        mAlivcLivePushConfig.setNetworkPoorPushImage(getFilesDir().getPath() + File.separator + "alivc_resource/poor_network.png");
                     }
                     break;
                 case R.id.home_left:
@@ -344,8 +362,8 @@ public class VideoRecordConfigActivity extends AppCompatActivity {
                         mAlivcLivePushConfig.setPreviewOrientation(ORIENTATION_LANDSCAPE_HOME_LEFT);
                         mOrientationEnum = ORIENTATION_LANDSCAPE_HOME_LEFT;
                         VideoRecordViewManager.cameraRotation = 90;
-                        mAlivcLivePushConfig.setPausePushImage(Environment.getExternalStorageDirectory().getPath() + File.separator + "alivc_resource/background_push_land.png");
-                        mAlivcLivePushConfig.setNetworkPoorPushImage(Environment.getExternalStorageDirectory().getPath() + File.separator + "alivc_resource/poor_network_land.png");
+                        mAlivcLivePushConfig.setPausePushImage(getFilesDir() + File.separator + "alivc_resource/background_push_land.png");
+                        mAlivcLivePushConfig.setNetworkPoorPushImage(getFilesDir().getPath() + File.separator + "alivc_resource/poor_network_land.png");
                     }
                     break;
                 case R.id.home_right:
@@ -353,8 +371,8 @@ public class VideoRecordConfigActivity extends AppCompatActivity {
                         mAlivcLivePushConfig.setPreviewOrientation(ORIENTATION_LANDSCAPE_HOME_RIGHT);
                         mOrientationEnum = ORIENTATION_LANDSCAPE_HOME_RIGHT;
                         VideoRecordViewManager.cameraRotation = 270;
-                        mAlivcLivePushConfig.setPausePushImage(Environment.getExternalStorageDirectory().getPath() + File.separator + "alivc_resource/background_push_land.png");
-                        mAlivcLivePushConfig.setNetworkPoorPushImage(Environment.getExternalStorageDirectory().getPath() + File.separator + "alivc_resource/poor_network_land.png");
+                        mAlivcLivePushConfig.setPausePushImage(getFilesDir().getPath() + File.separator + "alivc_resource/background_push_land.png");
+                        mAlivcLivePushConfig.setNetworkPoorPushImage(getFilesDir().getPath() + File.separator + "alivc_resource/poor_network_land.png");
                     }
                     break;
                 default:
@@ -565,6 +583,14 @@ public class VideoRecordConfigActivity extends AppCompatActivity {
     }
 
     private void startPushWithoutSurface(String url) {
+        AlivcLiveBase.registerSDK();
+        // 日志配置
+        AlivcLiveBase.setLogLevel(AlivcLivePushLogLevel.AlivcLivePushLogLevelDebug);
+        AlivcLiveBase.setConsoleEnabled(true);
+        String logPath = getFilePath(getApplicationContext(), "log_path");
+        // full log file limited was kLogMaxFileSizeInKB * 5 (parts)
+        int maxPartFileSizeInKB = 100 * 1024 * 1024; //100G
+        AlivcLiveBase.setLogDirPath(logPath, maxPartFileSizeInKB);
         mAlivcLivePusher = new AlivcLivePusher();
         try {
             mAlivcLivePusher.init(getApplicationContext(), mAlivcLivePushConfig);
@@ -587,7 +613,6 @@ public class VideoRecordConfigActivity extends AppCompatActivity {
 
             @Override
             public void onPushStarted(AlivcLivePusher pusher) {
-
             }
 
             @Override
@@ -610,12 +635,11 @@ public class VideoRecordConfigActivity extends AppCompatActivity {
 
             @Override
             public void onPushRestarted(AlivcLivePusher pusher) {
-
             }
 
             @Override
             public void onFirstFramePreviewed(AlivcLivePusher pusher) {
-
+                mIsStartPushing = false;
             }
 
             @Override
@@ -632,10 +656,39 @@ public class VideoRecordConfigActivity extends AppCompatActivity {
             public void onAdjustFps(AlivcLivePusher pusher, int curFps, int targetFps) {
 
             }
+
+            @Override
+            public void onPushStatistics(AlivcLivePusher alivcLivePusher, AlivcLivePushStatsInfo alivcLivePushStatsInfo) {
+
+            }
         });
 
-        mAlivcLivePusher.startPreview(null);
-        mAlivcLivePusher.startPush(url);
+        mAlivcLivePusher.setLivePushErrorListener(new AlivcLivePushErrorListener() {
+            @Override
+            public void onSystemError(AlivcLivePusher livePusher, AlivcLivePushError error) {
+                showDialog(getString(R.string.system_error) +  error.toString());
+            }
+
+            @Override
+            public void onSDKError(AlivcLivePusher livePusher, AlivcLivePushError error) {
+                showDialog(getString(R.string.sdk_error) +  error.toString());
+            }
+        });
+
+        try {
+            mAlivcLivePusher.startPreview(null);
+        } catch (Exception e)
+        {
+            showDialog("StartPreview failed");
+            return;
+        }
+        try {
+            mAlivcLivePusher.startPush(url);
+        } catch (Exception e)
+        {
+            showDialog("startPush failed");
+            return;
+        }
 
         mAlivcLivePusher.setPreviewOrientation(AlivcPreviewOrientationEnum.ORIENTATION_LANDSCAPE_HOME_LEFT);
         mAlivcLivePusher.setCaptureVolume(mCaptureVolume);
@@ -668,5 +721,18 @@ public class VideoRecordConfigActivity extends AppCompatActivity {
         for (int i = 0; i < radioGroup.getChildCount(); i++) {
             radioGroup.getChildAt(i).setEnabled(bool);
         }
+    }
+
+    private void showDialog(final String message) {
+        if(getApplicationContext() == null || message == null) {
+            return;
+        }
+        Handler handler = new Handler(Looper.getMainLooper());
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                mNoteText.setText(message);
+            }
+        });
     }
 }

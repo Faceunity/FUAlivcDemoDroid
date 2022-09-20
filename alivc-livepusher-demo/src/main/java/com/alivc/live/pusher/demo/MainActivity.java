@@ -1,34 +1,38 @@
 package com.alivc.live.pusher.demo;
 
 import android.Manifest;
-import android.app.ListActivity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.PermissionChecker;
+import androidx.annotation.Nullable;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.PermissionChecker;
+import androidx.appcompat.app.AppCompatActivity;
 import android.view.View;
-import android.widget.ArrayAdapter;
-import android.widget.ListView;
+import android.view.Window;
+import android.view.WindowManager;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
-public class MainActivity extends ListActivity {
+import com.faceunity.FUConfig;
+import com.faceunity.nama.utils.FuDeviceUtils;
 
-
-    String[] modules = null;
+public class MainActivity extends AppCompatActivity implements View.OnClickListener{
+    private LinearLayout mLivePushLayout;
+    private LinearLayout mLivePullCommonPullLayout;
+    private LinearLayout mLivePullRtcLayout;
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_main);
-        modules = new String[]{
-                getString(R.string.live_basic_function),
-                getString(R.string.license_declaration)
-        };
-        setListAdapter(new ArrayAdapter<String>(this,
-                android.R.layout.simple_list_item_1, modules));
+
+        FUConfig.DEVICE_LEVEL = FuDeviceUtils.judgeDeviceLevel(this);
+
+        initView();
 
         if (!permissionCheck()) {
             if (Build.VERSION.SDK_INT >= 23) {
@@ -39,21 +43,13 @@ public class MainActivity extends ListActivity {
             }
         }
     }
-
-    public void onListItemClick(ListView parent, View v, int position, long id) {
-        Intent intent;
-        switch (position) {
-            case 0:
-                intent = new Intent(this, SecondActivity.class);
-                startActivity(intent);
-                break;
-            case 1:
-                intent = new Intent(this, LicenseActivity.class);
-                startActivity(intent);
-                break;
-            default:
-                break;
-        }
+    private void initView() {
+        mLivePushLayout = (LinearLayout) findViewById(R.id.push_enter_layout);
+        mLivePushLayout.setOnClickListener(this);
+        mLivePullCommonPullLayout = (LinearLayout) findViewById(R.id.pull_common_enter_layout);
+        mLivePullCommonPullLayout.setOnClickListener(this);
+        mLivePullRtcLayout = (LinearLayout) findViewById(R.id.pull_enter_layout);
+        mLivePullRtcLayout.setOnClickListener(this);
     }
 
     private int mNoPermissionIndex = 0;
@@ -91,6 +87,27 @@ public class MainActivity extends ListActivity {
             return false;
         } else {
             return true;
+        }
+    }
+    @Override
+    public void onClick(View v) {
+        Intent intent;
+        switch (v.getId()) {
+            case R.id.push_enter_layout:
+                intent = new Intent(MainActivity.this, PushConfigActivity.class);
+                startActivity(intent);
+                break;
+            case R.id.pull_common_enter_layout:
+                intent = new Intent(MainActivity.this, VideoRecordConfigActivity.class);
+                startActivity(intent);
+                break;
+            case R.id.pull_enter_layout:
+                intent = new Intent(MainActivity.this, PlayerActivity.class);
+                startActivity(intent);
+                break;
+            default:
+                break;
+
         }
     }
 
