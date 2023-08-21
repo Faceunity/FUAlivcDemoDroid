@@ -1,8 +1,6 @@
 package com.faceunity.nama.checkbox;
 
 import android.content.Context;
-import androidx.annotation.IdRes;
-
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
@@ -10,6 +8,8 @@ import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.LinearLayout;
+
+import androidx.annotation.IdRes;
 
 /**
  * Created by tujh on 2018/4/17.

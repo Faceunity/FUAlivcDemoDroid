@@ -15,7 +15,7 @@ import android.view.WindowManager;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
-import com.faceunity.FUConfig;
+import com.faceunity.nama.FUConfig;
 import com.faceunity.nama.utils.FuDeviceUtils;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener{
@@ -30,7 +30,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_main);
 
-        FUConfig.DEVICE_LEVEL = FuDeviceUtils.judgeDeviceLevel(this);
+        FUConfig.DEVICE_LEVEL = FuDeviceUtils.judgeDeviceLevelGPU();
 
         initView();
 

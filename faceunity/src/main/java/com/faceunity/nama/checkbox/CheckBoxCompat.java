@@ -2,8 +2,9 @@ package com.faceunity.nama.checkbox;
 
 import android.content.Context;
 import android.graphics.drawable.StateListDrawable;
-import androidx.appcompat.widget.AppCompatCheckBox;
 import android.util.AttributeSet;
+
+import androidx.appcompat.widget.AppCompatCheckBox;
 
 
 /**
