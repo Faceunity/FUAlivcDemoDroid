@@ -43,7 +43,6 @@ import com.alivc.live.pusher.AlivcLivePushLogLevel;
 import com.alivc.live.pusher.AlivcLivePushStatsInfo;
 import com.alivc.live.pusher.AlivcLivePusher;
 import com.alivc.live.pusher.AlivcPreviewOrientationEnum;
-import com.alivc.live.pusher.LogUtil;
 import com.alivc.live.pusher.PreferenceUtil;
 import com.alivc.live.pusher.SurfaceStatus;
 import com.alivc.live.pusher.profile.CSVUtils;
@@ -52,11 +51,16 @@ import com.faceunity.core.enumeration.CameraFacingEnum;
 import com.faceunity.core.enumeration.FUAIProcessorEnum;
 import com.faceunity.core.enumeration.FUInputTextureEnum;
 import com.faceunity.core.enumeration.FUTransformMatrixEnum;
+import com.faceunity.core.faceunity.FUAIKit;
+import com.faceunity.core.faceunity.FURenderKit;
+import com.faceunity.core.model.facebeauty.FaceBeautyBlurTypeEnum;
 import com.faceunity.core.utils.CameraUtils;
+import com.faceunity.nama.FUConfig;
 import com.faceunity.nama.FURenderer;
 import com.faceunity.nama.data.FaceUnityDataFactory;
 import com.faceunity.nama.listener.FURendererListener;
 import com.faceunity.nama.ui.FaceUnityView;
+import com.faceunity.nama.utils.FuDeviceUtils;
 import com.faceunity.wrapper.faceunity;
 
 import java.io.File;
@@ -254,7 +258,6 @@ public class LivePushActivity extends AppCompatActivity implements SensorEventLi
         mTvFps = findViewById(R.id.tv_fps);
 
         mFURenderer = FURenderer.getInstance();
-        mFURenderer.setup(this);
 
         mFURenderer.setMarkFPSEnable(true);
         mFURenderer.setInputTextureType(FUInputTextureEnum.FU_ADM_FLAG_COMMON_TEXTURE);
@@ -264,9 +267,27 @@ public class LivePushActivity extends AppCompatActivity implements SensorEventLi
         mFURenderer.setOutputMatrix(FUTransformMatrixEnum.CCROT0);
 
 
-        mFaceUnityDataFactory = new FaceUnityDataFactory(0);
+        mFaceUnityDataFactory = new FaceUnityDataFactory(-1);
         beautyControlView.bindDataFactory(mFaceUnityDataFactory);
         mAlivcLivePusher.setCustomFilter(new AlivcLivePushCustomFilter() {
+
+            private void cheekFaceNum() {
+                //根据有无人脸 + 设备性能 判断开启的磨皮类型
+                float faceProcessorGetConfidenceScore = FUAIKit.getInstance().getFaceProcessorGetConfidenceScore(0);
+                if (faceProcessorGetConfidenceScore >= 0.95) {
+                    //高端手机并且检测到人脸开启均匀磨皮，人脸点位质
+                    if (FURenderKit.getInstance() != null && FURenderKit.getInstance().getFaceBeauty() != null && FURenderKit.getInstance().getFaceBeauty().getBlurType() != FaceBeautyBlurTypeEnum.EquallySkin) {
+                        FURenderKit.getInstance().getFaceBeauty().setBlurType(FaceBeautyBlurTypeEnum.EquallySkin);
+                        FURenderKit.getInstance().getFaceBeauty().setEnableBlurUseMask(true);
+                    }
+                } else {
+                    if (FURenderKit.getInstance() != null && FURenderKit.getInstance().getFaceBeauty() != null && FURenderKit.getInstance().getFaceBeauty().getBlurType() != FaceBeautyBlurTypeEnum.FineSkin) {
+                        FURenderKit.getInstance().getFaceBeauty().setBlurType(FaceBeautyBlurTypeEnum.FineSkin);
+                        FURenderKit.getInstance().getFaceBeauty().setEnableBlurUseMask(false);
+                    }
+                }
+            }
+
             @Override
             public void customFilterCreate() {
                 mFURenderer.prepareRenderer(mFURendererListener);
@@ -280,6 +301,10 @@ public class LivePushActivity extends AppCompatActivity implements SensorEventLi
                     faceunity.fuOnCameraChange();
                     return 0;
                 }
+                if (FUConfig.DEVICE_LEVEL > FuDeviceUtils.DEVICE_LEVEL_MID){ //高性能设备
+                    cheekFaceNum();
+                }
+
                 long start = System.nanoTime();
                 int texId = mFURenderer.onDrawFrameSingleInput(inputTexture, textureWidth, textureHeight);
                 long time = System.nanoTime() - start;
@@ -427,7 +452,7 @@ public class LivePushActivity extends AppCompatActivity implements SensorEventLi
                 if(mAlivcLivePusher != null) {
                     try {
                         if(mAsync) {
-                            mAlivcLivePusher.startPreviewAysnc(mPreviewView);
+                            mAlivcLivePusher.startPreviewAsync(mPreviewView);
                         } else {
                             mAlivcLivePusher.startPreview(mPreviewView);
                         }
@@ -744,7 +769,6 @@ public class LivePushActivity extends AppCompatActivity implements SensorEventLi
         String logFileName = "live_pusher_" + sdf.format(new Date()) + "_" + String.valueOf(System.currentTimeMillis()) + ".log";
         logFilePath += File.separator + logFileName;
 
-        LogUtil.d("log filePath====>" + logFilePath);
         return logFilePath;
     }
 

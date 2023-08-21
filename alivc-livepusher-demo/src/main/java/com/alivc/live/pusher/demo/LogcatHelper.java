@@ -1,10 +1,6 @@
 package com.alivc.live.pusher.demo;
 
 import android.content.Context;
-import android.os.Environment;
-
-import com.alivc.live.pusher.LogUtil;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileFilter;
@@ -52,7 +48,6 @@ public class LogcatHelper {
         if (mLogDumper == null)
             mLogDumper = new LogDumper(String.valueOf(mPId), PATH_LOGCAT);
 
-        LogUtil.d("LogcatHelper", "logcat thread " + mLogDumper.isAlive());
          if(!mLogDumper.isAlive()) {
             mLogDumper.start();
         }

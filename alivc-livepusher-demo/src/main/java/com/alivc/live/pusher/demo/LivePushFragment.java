@@ -23,6 +23,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 
+import com.alivc.live.annotations.AlivcLivePushKickedOutType;
 import com.alivc.live.pusher.AlivcLivePushBGMListener;
 import com.alivc.live.pusher.AlivcLivePushError;
 import com.alivc.live.pusher.AlivcLivePushErrorListener;
@@ -327,7 +328,7 @@ public class LivePushFragment extends Fragment implements Runnable {
                                     //stopYUV();
                                 } else {
                                     if (mAsync) {
-                                        mAlivcLivePusher.startPreviewAysnc(mSurfaceView);
+                                        mAlivcLivePusher.startPreviewAsync(mSurfaceView);
                                     } else {
                                         mAlivcLivePusher.startPreview(mSurfaceView);
                                     }
@@ -349,7 +350,7 @@ public class LivePushFragment extends Fragment implements Runnable {
                                 final boolean isPush = mPushButton.isSelected();
                                 if (isPush) {
                                     if (mAsync) {
-                                        mAlivcLivePusher.startPushAysnc(mPushUrl);
+                                        mAlivcLivePusher.startPushAsync(mPushUrl);
                                     } else {
                                         mAlivcLivePusher.startPush(mPushUrl);
                                     }
@@ -411,7 +412,7 @@ public class LivePushFragment extends Fragment implements Runnable {
                                 if (mAsync) {
                                     if (!mIsStartAsnycPushing) {
                                         mIsStartAsnycPushing = true;
-                                        mAlivcLivePusher.restartPushAync();
+                                        mAlivcLivePusher.restartPushAsync();
                                     }
                                 } else {
                                     mAlivcLivePusher.restartPush();
@@ -526,7 +527,7 @@ public class LivePushFragment extends Fragment implements Runnable {
         }
 
         @Override
-        public void onPreviewStoped(AlivcLivePusher pusher) {
+        public void onPreviewStopped(AlivcLivePusher pusher) {
             showToast(getString(R.string.stop_preview));
         }
 
@@ -537,11 +538,7 @@ public class LivePushFragment extends Fragment implements Runnable {
         }
 
         @Override
-        public void onFirstAVFramePushed(AlivcLivePusher pusher) {
-        }
-
-        @Override
-        public void onPushPauesed(AlivcLivePusher pusher) {
+        public void onPushPaused(AlivcLivePusher pusher) {
             showToast(getString(R.string.pause_push));
         }
 
@@ -551,7 +548,7 @@ public class LivePushFragment extends Fragment implements Runnable {
         }
 
         @Override
-        public void onPushStoped(AlivcLivePusher pusher) {
+        public void onPushStopped(AlivcLivePusher pusher) {
             showToast(getString(R.string.stop_push));
         }
 
@@ -572,11 +569,17 @@ public class LivePushFragment extends Fragment implements Runnable {
         }
 
         @Override
+        public void onFirstFramePushed(AlivcLivePusher alivcLivePusher) {
+
+        }
+
+        @Override
         public void onDropFrame(AlivcLivePusher pusher, int countBef, int countAft) {
         }
 
         @Override
-        public void onAdjustBitRate(AlivcLivePusher pusher, int curBr, int targetBr) {
+        public void onAdjustBitrate(AlivcLivePusher alivcLivePusher, int i, int i1) {
+
         }
 
         @Override
@@ -585,6 +588,16 @@ public class LivePushFragment extends Fragment implements Runnable {
 
         @Override
         public void onPushStatistics(AlivcLivePusher alivcLivePusher, AlivcLivePushStatsInfo alivcLivePushStatsInfo) {
+
+        }
+
+        @Override
+        public void onSetLiveMixTranscodingConfig(AlivcLivePusher alivcLivePusher, boolean b, String s) {
+
+        }
+
+        @Override
+        public void onKickedOutByServer(AlivcLivePusher alivcLivePusher, AlivcLivePushKickedOutType alivcLivePushKickedOutType) {
 
         }
     };
@@ -658,6 +671,16 @@ public class LivePushFragment extends Fragment implements Runnable {
         }
 
         @Override
+        public void onPushURLTokenWillExpire(AlivcLivePusher alivcLivePusher) {
+
+        }
+
+        @Override
+        public void onPushURLTokenExpired(AlivcLivePusher alivcLivePusher) {
+
+        }
+
+        @Override
         public void onSendMessage(AlivcLivePusher pusher) {
             showToast(getString(R.string.send_message));
         }
@@ -675,7 +698,7 @@ public class LivePushFragment extends Fragment implements Runnable {
         }
 
         @Override
-        public void onStoped() {
+        public void onStopped() {
 
         }
 

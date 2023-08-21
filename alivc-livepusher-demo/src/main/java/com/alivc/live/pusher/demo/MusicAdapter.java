@@ -9,7 +9,6 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.alivc.live.pusher.LogUtil;
 
 import java.util.ArrayList;
 
@@ -82,7 +81,6 @@ public class MusicAdapter extends RecyclerView.Adapter<MusicAdapter.MusicViewHol
             holder.itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    LogUtil.d("TAG", "onclick position is " + position);
                     if(mOnItemClick != null) {
                         mOnItemClick.onItemClick(musicList.get(position), position);
                     }

@@ -41,6 +41,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.acker.simplezxing.activity.CaptureActivity;
+import com.alivc.live.annotations.AlivcLivePushKickedOutType;
 import com.alivc.live.pusher.AlivcLiveBase;
 import com.alivc.live.pusher.AlivcLivePushConfig;
 import com.alivc.live.pusher.AlivcLivePushError;
@@ -607,7 +608,7 @@ public class VideoRecordConfigActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onPreviewStoped(AlivcLivePusher pusher) {
+            public void onPreviewStopped(AlivcLivePusher pusher) {
 
             }
 
@@ -616,10 +617,7 @@ public class VideoRecordConfigActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onFirstAVFramePushed(AlivcLivePusher pusher) {
-            }
-            @Override
-            public void onPushPauesed(AlivcLivePusher pusher) {
+            public void onPushPaused(AlivcLivePusher alivcLivePusher) {
 
             }
 
@@ -629,7 +627,7 @@ public class VideoRecordConfigActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onPushStoped(AlivcLivePusher pusher) {
+            public void onPushStopped(AlivcLivePusher alivcLivePusher) {
 
             }
 
@@ -643,12 +641,17 @@ public class VideoRecordConfigActivity extends AppCompatActivity {
             }
 
             @Override
+            public void onFirstFramePushed(AlivcLivePusher alivcLivePusher) {
+
+            }
+
+            @Override
             public void onDropFrame(AlivcLivePusher pusher, int countBef, int countAft) {
 
             }
 
             @Override
-            public void onAdjustBitRate(AlivcLivePusher pusher, int curBr, int targetBr) {
+            public void onAdjustBitrate(AlivcLivePusher alivcLivePusher, int i, int i1) {
 
             }
 
@@ -659,6 +662,16 @@ public class VideoRecordConfigActivity extends AppCompatActivity {
 
             @Override
             public void onPushStatistics(AlivcLivePusher alivcLivePusher, AlivcLivePushStatsInfo alivcLivePushStatsInfo) {
+
+            }
+
+            @Override
+            public void onSetLiveMixTranscodingConfig(AlivcLivePusher alivcLivePusher, boolean b, String s) {
+
+            }
+
+            @Override
+            public void onKickedOutByServer(AlivcLivePusher alivcLivePusher, AlivcLivePushKickedOutType alivcLivePushKickedOutType) {
 
             }
         });

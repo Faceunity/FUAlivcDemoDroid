@@ -29,6 +29,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.acker.simplezxing.activity.CaptureActivity;
+import com.alivc.live.annotations.AlivcLivePushKickedOutType;
 import com.alivc.live.pusher.AlivcAudioAACProfileEnum;
 import com.alivc.live.pusher.AlivcAudioChannelEnum;
 import com.alivc.live.pusher.AlivcAudioSampleRateEnum;
@@ -452,7 +453,7 @@ public class PushConfigActivity extends AppCompatActivity {
             } else if(id == R.id.extern_video) {
                 mAlivcLivePushConfig.setExternMainStream(isChecked, AlivcImageFormat.IMAGE_FORMAT_YUVNV12, AlivcSoundFormat.SOUND_FORMAT_S16);
                 mAlivcLivePushConfig.setAudioChannels(AlivcAudioChannelEnum.AUDIO_CHANNEL_ONE);
-                mAlivcLivePushConfig.setAudioSamepleRate(AlivcAudioSampleRateEnum.AUDIO_SAMPLE_RATE_44100);
+                mAlivcLivePushConfig.setAudioSampleRate(AlivcAudioSampleRateEnum.AUDIO_SAMPLE_RATE_44100);
             } else if(id == R.id.pause_image) {
                 if(!isChecked) {
                     mAlivcLivePushConfig.setPausePushImage("");
@@ -631,13 +632,13 @@ public class PushConfigActivity extends AppCompatActivity {
                 }
             } else if (mAudioRate.getId() == seekBarId) {
                 if(progress <=30) {
-                    mAlivcLivePushConfig.setAudioSamepleRate(AlivcAudioSampleRateEnum.AUDIO_SAMPLE_RATE_32000);
+                    mAlivcLivePushConfig.setAudioSampleRate(AlivcAudioSampleRateEnum.AUDIO_SAMPLE_RATE_32000);
                     mAudioRateText.setText(getString(R.string.setting_audio_320));
                 } else if(progress>30 && progress <=70){
-                    mAlivcLivePushConfig.setAudioSamepleRate(AlivcAudioSampleRateEnum.AUDIO_SAMPLE_RATE_44100);
+                    mAlivcLivePushConfig.setAudioSampleRate(AlivcAudioSampleRateEnum.AUDIO_SAMPLE_RATE_44100);
                     mAudioRateText.setText(getString(R.string.setting_audio_441));
                 } else if(progress>70){
-                    mAlivcLivePushConfig.setAudioSamepleRate(AlivcAudioSampleRateEnum.AUDIO_SAMPLE_RATE_48000);
+                    mAlivcLivePushConfig.setAudioSampleRate(AlivcAudioSampleRateEnum.AUDIO_SAMPLE_RATE_48000);
                     mAudioRateText.setText(getString(R.string.setting_audio_480));
                 }
             }else if (mFps.getId() == seekBarId) {
@@ -1339,7 +1340,7 @@ public class PushConfigActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onPreviewStoped(AlivcLivePusher pusher) {
+            public void onPreviewStopped(AlivcLivePusher pusher) {
 
             }
 
@@ -1349,10 +1350,7 @@ public class PushConfigActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onFirstAVFramePushed(AlivcLivePusher pusher) {
-            }
-            @Override
-            public void onPushPauesed(AlivcLivePusher pusher) {
+            public void onPushPaused(AlivcLivePusher pusher) {
 
             }
 
@@ -1362,7 +1360,7 @@ public class PushConfigActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onPushStoped(AlivcLivePusher pusher) {
+            public void onPushStopped(AlivcLivePusher pusher) {
 
             }
 
@@ -1377,12 +1375,17 @@ public class PushConfigActivity extends AppCompatActivity {
             }
 
             @Override
+            public void onFirstFramePushed(AlivcLivePusher alivcLivePusher) {
+
+            }
+
+            @Override
             public void onDropFrame(AlivcLivePusher pusher, int countBef, int countAft) {
 
             }
 
             @Override
-            public void onAdjustBitRate(AlivcLivePusher pusher, int curBr, int targetBr) {
+            public void onAdjustBitrate(AlivcLivePusher alivcLivePusher, int i, int i1) {
 
             }
 
@@ -1393,6 +1396,16 @@ public class PushConfigActivity extends AppCompatActivity {
 
             @Override
             public void onPushStatistics(AlivcLivePusher alivcLivePusher, AlivcLivePushStatsInfo alivcLivePushStatsInfo) {
+
+            }
+
+            @Override
+            public void onSetLiveMixTranscodingConfig(AlivcLivePusher alivcLivePusher, boolean b, String s) {
+
+            }
+
+            @Override
+            public void onKickedOutByServer(AlivcLivePusher alivcLivePusher, AlivcLivePushKickedOutType alivcLivePushKickedOutType) {
 
             }
         });

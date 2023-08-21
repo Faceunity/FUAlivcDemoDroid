@@ -8,7 +8,7 @@ import android.net.ConnectivityManager;
 
 import androidx.multidex.MultiDexApplication;
 
-import com.alivc.live.pusher.LogUtil;
+import com.faceunity.nama.FURenderer;
 
 public class LiveApplication extends MultiDexApplication {
 
@@ -26,11 +26,7 @@ public class LiveApplication extends MultiDexApplication {
         IntentFilter filter = new IntentFilter();
         filter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
         registerReceiver(new ConnectivityChangedReceiver(), filter);
-        if(BuildConfig.DEBUG) {
-            LogUtil.enableDebug();
-        } else {
-            LogUtil.disableDebug();
-        }
+        FURenderer.getInstance().setup(this);
     }
 
 
